@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+
+# Data and generated outputs
+data/processed/*
+!data/processed/.gitkeep
+outputs/*
+!outputs/.gitkeep
+*.sqlite
+*.sqlite3
+
+# Office temporary files
+~$*
+*.tmp
+
+# Node dependencies
+node_modules/
+
+# Old report versions
+report/archive/
+
+# Superseded report files
+report/*_更新版.*

@@ -1,0 +1,628 @@
+"""Generate the Chinese course midterm report as a DOCX draft."""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pandas as pd
+from docx import Document
+from docx.enum.section import WD_SECTION
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
+from docx.enum.text import WD_ALIGN_PARAGRAPH, WD_BREAK, WD_LINE_SPACING
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
+from docx.shared import Cm, Inches, Pt, RGBColor
+
+from src.config import CHARTS_DIR, PROCESSED_DIR, PROJECT_ROOT, REPORT_DIR, TABLES_DIR
+
+DOCX_PATH = REPORT_DIR / "数据挖掘课程中期报告_香港新加坡短租分析.docx"
+BODY_FONT = "宋体"
+HEAD_FONT = "黑体"
+ACCENT = RGBColor(23, 54, 93)
+
+
+def _set_cell_shading(cell, fill: str) -> None:
+    tc_pr = cell._tc.get_or_add_tcPr()
+    shd = OxmlElement("w:shd")
+    shd.set(qn("w:fill"), fill)
+    tc_pr.append(shd)
+
+
+def _set_repeat_table_header(row) -> None:
+    tr_pr = row._tr.get_or_add_trPr()
+    tbl_header = OxmlElement("w:tblHeader")
+    tbl_header.set(qn("w:val"), "true")
+    tr_pr.append(tbl_header)
+
+
+def _set_cell_text(cell, text: str, bold: bool = False, color: RGBColor | None = None, size: float = 9.5) -> None:
+    cell.text = ""
+    p = cell.paragraphs[0]
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    run = p.add_run(str(text))
+    run.bold = bold
+    run.font.name = BODY_FONT
+    run._element.rPr.rFonts.set(qn("w:eastAsia"), BODY_FONT)
+    run.font.size = Pt(size)
+    if color:
+        run.font.color.rgb = color
+    cell.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.CENTER
+
+
+def _add_style(doc: Document) -> None:
+    normal = doc.styles["Normal"]
+    normal.font.name = BODY_FONT
+    normal._element.rPr.rFonts.set(qn("w:eastAsia"), BODY_FONT)
+    normal.font.size = Pt(10.5)
+    normal.paragraph_format.line_spacing = 1.5
+    normal.paragraph_format.first_line_indent = Pt(21)
+    normal.paragraph_format.space_after = Pt(3)
+    for level, size in [(1, 16), (2, 14), (3, 12)]:
+        style = doc.styles[f"Heading {level}"]
+        style.font.name = HEAD_FONT
+        style._element.rPr.rFonts.set(qn("w:eastAsia"), HEAD_FONT)
+        style.font.size = Pt(size)
+        style.font.bold = True
+        style.font.color.rgb = ACCENT
+        style.paragraph_format.space_before = Pt(12)
+        style.paragraph_format.space_after = Pt(6)
+        style.paragraph_format.first_line_indent = Pt(0)
+
+
+def _add_page_number(doc: Document) -> None:
+    for section in doc.sections:
+        footer = section.footer
+        paragraph = footer.paragraphs[0]
+        paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = paragraph.add_run()
+        fld_char1 = OxmlElement("w:fldChar")
+        fld_char1.set(qn("w:fldCharType"), "begin")
+        instr = OxmlElement("w:instrText")
+        instr.set(qn("xml:space"), "preserve")
+        instr.text = "PAGE"
+        fld_char2 = OxmlElement("w:fldChar")
+        fld_char2.set(qn("w:fldCharType"), "end")
+        run._r.append(fld_char1)
+        run._r.append(instr)
+        run._r.append(fld_char2)
+
+
+def _add_toc(doc: Document) -> None:
+    paragraph = doc.add_paragraph()
+    run = paragraph.add_run()
+    fld_char = OxmlElement("w:fldChar")
+    fld_char.set(qn("w:fldCharType"), "begin")
+    instr = OxmlElement("w:instrText")
+    instr.set(qn("xml:space"), "preserve")
+    instr.text = 'TOC \\o "1-3" \\h \\z \\u'
+    fld_char2 = OxmlElement("w:fldChar")
+    fld_char2.set(qn("w:fldCharType"), "separate")
+    text = OxmlElement("w:t")
+    text.text = "右键单击目录并选择“更新域”以生成页码。"
+    fld_char3 = OxmlElement("w:fldChar")
+    fld_char3.set(qn("w:fldCharType"), "end")
+    run._r.append(fld_char)
+    run._r.append(instr)
+    run._r.append(fld_char2)
+    run._r.append(text)
+    run._r.append(fld_char3)
+
+
+def _update_fields_on_open(doc: Document) -> None:
+    settings = doc.settings._element
+    update = OxmlElement("w:updateFields")
+    update.set(qn("w:val"), "true")
+    settings.append(update)
+
+
+def _body(doc: Document, text: str, bold_prefix: str | None = None) -> None:
+    p = doc.add_paragraph()
+    p.paragraph_format.first_line_indent = Pt(21)
+    if bold_prefix and text.startswith(bold_prefix):
+        run1 = p.add_run(bold_prefix)
+        run1.bold = True
+        run2 = p.add_run(text[len(bold_prefix) :])
+    else:
+        p.add_run(text)
+
+
+def _bullet(doc: Document, text: str) -> None:
+    p = doc.add_paragraph(style="List Bullet")
+    p.paragraph_format.first_line_indent = Pt(0)
+    p.add_run(text)
+
+
+def _caption(doc: Document, text: str) -> None:
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.first_line_indent = Pt(0)
+    run = p.add_run(text)
+    run.font.name = BODY_FONT
+    run._element.rPr.rFonts.set(qn("w:eastAsia"), BODY_FONT)
+    run.font.size = Pt(9)
+    run.font.color.rgb = RGBColor(89, 89, 89)
+
+
+def _figure(doc: Document, path: Path, caption: str, width: float = 6.2) -> None:
+    if not path.exists():
+        _body(doc, f"[图表待生成：{path.name}]")
+        return
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.first_line_indent = Pt(0)
+    p.add_run().add_picture(str(path), width=Inches(width))
+    _caption(doc, caption)
+
+
+def _table(doc: Document, headers: list[str], rows: list[list[object]], caption: str, widths: list[float] | None = None) -> None:
+    table = doc.add_table(rows=1, cols=len(headers))
+    table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    table.style = "Table Grid"
+    header_row = table.rows[0]
+    _set_repeat_table_header(header_row)
+    for i, header in enumerate(headers):
+        _set_cell_text(header_row.cells[i], header, bold=True, color=RGBColor(255, 255, 255), size=9)
+        _set_cell_shading(header_row.cells[i], "17365D")
+    for r_index, row in enumerate(rows):
+        cells = table.add_row().cells
+        for i, value in enumerate(row):
+            text = "" if value is None else f"{value:,.4f}".rstrip("0").rstrip(".") if isinstance(value, float) else str(value)
+            _set_cell_text(cells[i], text)
+            if r_index % 2 == 1:
+                _set_cell_shading(cells[i], "F2F5F8")
+    if widths:
+        for row in table.rows:
+            for index, width in enumerate(widths):
+                row.cells[index].width = Inches(width)
+    _caption(doc, caption)
+
+
+def _cover(doc: Document) -> None:
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.first_line_indent = Pt(0)
+    r = p.add_run("2026—2027 学年第 1 学期")
+    r.bold = True
+    r.font.size = Pt(14)
+    r.font.name = HEAD_FONT
+    r._element.rPr.rFonts.set(qn("w:eastAsia"), HEAD_FONT)
+
+    for _ in range(3):
+        doc.add_paragraph()
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.first_line_indent = Pt(0)
+    r = p.add_run("数 据 挖 掘")
+    r.bold = True
+    r.font.size = Pt(28)
+    r.font.name = HEAD_FONT
+    r._element.rPr.rFonts.set(qn("w:eastAsia"), HEAD_FONT)
+    r.font.color.rgb = ACCENT
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.first_line_indent = Pt(0)
+    r = p.add_run("中 期 报 告")
+    r.bold = True
+    r.font.size = Pt(22)
+    r.font.name = HEAD_FONT
+    r._element.rPr.rFonts.set(qn("w:eastAsia"), HEAD_FONT)
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.first_line_indent = Pt(0)
+    r = p.add_run("城市短租平台供需匹配与经营决策支持系统")
+    r.bold = True
+    r.font.size = Pt(18)
+    r.font.name = HEAD_FONT
+    r._element.rPr.rFonts.set(qn("w:eastAsia"), HEAD_FONT)
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.first_line_indent = Pt(0)
+    r = p.add_run("——基于中国香港与新加坡的多维分析")
+    r.font.size = Pt(14)
+    r.font.name = BODY_FONT
+    r._element.rPr.rFonts.set(qn("w:eastAsia"), BODY_FONT)
+    for _ in range(8):
+        doc.add_paragraph()
+    for text in ("专业：____________________", "学号：____________________", "姓名：____________________"):
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        p.paragraph_format.first_line_indent = Pt(0)
+        r = p.add_run(text)
+        r.font.size = Pt(12)
+        r.font.name = BODY_FONT
+        r._element.rPr.rFonts.set(qn("w:eastAsia"), BODY_FONT)
+    doc.add_paragraph()
+    p = doc.add_paragraph()
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p.paragraph_format.first_line_indent = Pt(0)
+    r = p.add_run("2026 年 11 月")
+    r.font.size = Pt(12)
+    r.font.name = BODY_FONT
+    r._element.rPr.rFonts.set(qn("w:eastAsia"), BODY_FONT)
+    doc.add_page_break()
+
+
+def _load_results() -> dict:
+    city = pd.read_parquet(PROCESSED_DIR / "dim_city.parquet")
+    kmeans = pd.read_csv(TABLES_DIR / "kmeans_profiles.csv")
+    model = json.loads((TABLES_DIR / "price_model_summary.json").read_text(encoding="utf-8"))
+    host = pd.read_csv(TABLES_DIR / "host_competition_city.csv")
+    supply = pd.read_csv(TABLES_DIR / "supply_demand_district.csv")
+    supply_summary = pd.read_csv(TABLES_DIR / "supply_demand_summary.csv")
+    network = json.loads((TABLES_DIR / "network_summary.json").read_text(encoding="utf-8"))
+    spatial = json.loads((TABLES_DIR / "spatial_summary.json").read_text(encoding="utf-8"))
+    trends = json.loads((TABLES_DIR / "google_trends_status.json").read_text(encoding="utf-8"))
+    room = pd.read_csv(TABLES_DIR / "room_type_summary.csv")
+    terms = pd.read_csv(TABLES_DIR / "review_top_terms.csv")
+    return {
+        "city": city,
+        "kmeans": kmeans,
+        "model": model,
+        "host": host,
+        "supply": supply,
+        "supply_summary": supply_summary,
+        "network": network,
+        "spatial": spatial,
+        "trends": trends,
+        "room": room,
+        "terms": terms,
+    }
+
+
+def generate() -> Path:
+    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+    results = _load_results()
+    city = results["city"]
+    hk = city[city["city_key"] == "hong-kong"].iloc[0]
+    sg = city[city["city_key"] == "singapore"].iloc[0]
+    hk_model = next(x for x in results["model"]["models"] if x["city_key"] == "hong-kong")
+    sg_model = next(x for x in results["model"]["models"] if x["city_key"] == "singapore")
+
+    doc = Document()
+    section = doc.sections[0]
+    section.page_height = Cm(29.7)
+    section.page_width = Cm(21.0)
+    section.top_margin = Cm(2.5)
+    section.bottom_margin = Cm(2.5)
+    section.left_margin = Cm(2.7)
+    section.right_margin = Cm(2.5)
+    _add_style(doc)
+    _add_page_number(doc)
+    _update_fields_on_open(doc)
+    _cover(doc)
+
+    # Abstract
+    doc.add_heading("摘  要", level=1).alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _body(
+        doc,
+        "本研究以中国香港和新加坡短租市场为研究对象，基于 Inside Airbnb 公开房源快照构建跨城市分析数据集。"
+        f"香港快照包含 {int(hk['listing_count']):,} 套房源、{int(hk['host_count']):,} 位房东和 {int(hk['review_count_total']):,} 条历史评论；"
+        f"新加坡快照包含 {int(sg['listing_count']):,} 套房源、{int(sg['host_count']):,} 位房东和 {int(sg['review_count_total']):,} 条历史评论。"
+        "研究围绕房源供给、价格分布、社区空间集聚、房东竞争、评论主题和社区供需匹配展开，并使用线性回归、随机森林、K-Means、DBSCAN、HHI、Gini 和 Lorenz 曲线等方法形成可解释结果。"
+        "香港随机森林房价模型测试集 R²(log)=0.836，新加坡为 0.803；K-Means 分别在香港和新加坡识别出 5 类和 4 类经营类型；"
+        "Gephi 多房源房东网络包含 9,301 个节点和 16,772 条真实关系边。"
+        "Google Trends 数据包含 7 条月度时间序列和 1 个全球相关搜索词表，共 427 条月度观测；跨序列比较使用 z-score 和月度变化。"
+    )
+    p = doc.add_paragraph()
+    p.paragraph_format.first_line_indent = Pt(0)
+    p.add_run("关键词：").bold = True
+    p.add_run("短租市场；香港；新加坡；供需匹配；K-Means；随机森林；空间分析；决策支持")
+    doc.add_page_break()
+    doc.add_heading("目  录", level=1).alignment = WD_ALIGN_PARAGRAPH.CENTER
+    _add_toc(doc)
+    doc.add_page_break()
+
+    doc.add_heading("1 需求分析", level=1)
+    doc.add_heading("1.1 环境假设", level=2)
+    doc.add_heading("1.1.1 企业概况或业务背景", level=3)
+    _body(
+        doc,
+        "本项目假设研究对象为一家在国际城市运营短租业务的平台区域团队，连接房东、住客、物业服务和物流/清洁等合作方。"
+        "平台通过房源展示、搜索匹配、预订、支付、入住服务、评价和复购形成经营闭环。研究中的企业、组织架构和决策角色属于课程分析中的业务环境假设，不代表任何真实企业内部组织。"
+        "为保证研究可复现，本文只使用公开、可下载的房源数据，不声称获得平台内部订单、成交价或真实入住率。"
+    )
+    _body(
+        doc,
+        "中国香港和新加坡均属于高密度国际城市，具有旅游、商务出行和跨境访客需求，同时短租供给受住房、旅游和监管环境影响。"
+        "选择两座城市进行同口径对比，可以观察不同市场规模、房型结构和房东结构下的经营差异。"
+    )
+    doc.add_heading("1.1.2 组织架构", level=3)
+    _body(doc, "虚拟区域运营团队由区域管理层统筹，下设市场研究、供给运营、收益与定价、房东运营、客户体验和数据分析六类职能。组织架构决定了系统中的用户角色、看板指标和决策流程。")
+    _figure(doc, CHARTS_DIR / "00_org_structure.png", "图 1-1 虚拟短租平台区域运营组织架构（研究假设）", 6.2)
+    doc.add_heading("1.1.3 主要业务", level=3)
+    _body(doc, "平台主要业务从房东入驻和房源上架开始，经过定价与库存管理、搜索与预订、入住服务、评价反馈，再回到经营决策。需求侧活动和供给侧管理通过评论、可订状态和交易指标形成反馈闭环。")
+    _figure(doc, CHARTS_DIR / "00_business_flow.png", "图 1-2 短租平台主要业务流程图", 6.5)
+
+    doc.add_heading("1.2 DSS 需求", level=2)
+    doc.add_heading("1.2.1 管理重点与难点", level=3)
+    for text in [
+        "供给结构复杂：房源数量、房型、社区密度和房东类型共同决定竞争结构，单纯比较房源总数容易误判。",
+        "价格缺乏可比性：香港使用 HKD、新加坡使用 SGD；同城还要区分房型、容量、最低入住天数和异常挂牌。",
+        "需求难以直接观测：平台不公开真实订单和入住率，只能使用评论活跃度和 Google Trends 搜索兴趣作为需求代理。",
+        "口碑问题需要定位：需要从评论文本识别位置、卫生、入住、服务、噪音等主题，而不能只看总评分。",
+        "社区层面存在供需错配：高需求但低供给可能是机会，也可能是数据不充分或监管约束；高供给低需求则意味着价格和经营压力。",
+    ]:
+        _bullet(doc, text)
+    doc.add_heading("1.2.2 所需的决策支持功能", level=3)
+    for text in [
+        "城市和社区经营总览：房源、房东、价格、评分和评论活动。",
+        "供给结构与竞争分析：房型、房东规模、HHI、Gini 和 Lorenz 曲线。",
+        "需求关注分析：评论月度趋势与 Google Trends 的导入、标准化和相关性分析。",
+        "挖掘实验室：K-Means、随机森林、DBSCAN 和特征重要性。",
+        "社区供需匹配：供给指数 S、需求代理指数 D、匹配指数 M 和四象限。",
+        "经营决策中心：输入城市、社区、房型、容量和定位，输出可比价格区间、竞争程度、风险和解释。",
+    ]:
+        _bullet(doc, text)
+
+    doc.add_page_break()
+    doc.add_heading("2 数据获取与处理", level=1)
+    doc.add_heading("2.1 数据来源与获取方式", level=2)
+    _body(
+        doc,
+        "Inside Airbnb 提供城市级公开房源快照，包含房源、日历、评论和社区边界。香港快照日期为 2026-09-20，新加坡为 2026-09-23。"
+        "原始文件下载日期为 2026-11-07，文件大小、下载链接和 SHA256 记录在 data_manifest.json 中。"
+        "数据授权为 CC BY 4.0，使用时需注明来源。"
+    )
+    _body(
+        doc,
+        "Google Trends 用于旅游、Airbnb 品牌和住宿类搜索关注度分析，统一采用 Web Search 和过去 5 年设置。"
+        "本轮已导入 8 个真实导出文件：7 条月度时间序列和 1 个全球相关搜索词表，时间范围为 2021-11 至 2026-11。"
+    )
+    _table(
+        doc,
+        ["城市", "快照日期", "房源", "日历记录", "评论", "社区边界"],
+        [
+            ["香港", "2026-09-20", f"{int(hk['listing_count']):,}", "2,414,110", "122,715", "18"],
+            ["新加坡", "2026-09-23", f"{int(sg['listing_count']):,}", "1,170,950", "46,000", "55"],
+        ],
+        "表 2-1 原始数据规模",
+        [1.0, 1.2, 1.0, 1.2, 1.0, 1.0],
+    )
+
+    doc.add_heading("2.2 数据表结构与数据示例", level=2)
+    _body(doc, "房源表为一套房源一行，包含房东、房型、容量、价格、评分、可订天数和许可字段；日历表为一个房源一天一行；评论表为一条评论一行。主要字段如表 2-2 所示。")
+    _table(
+        doc,
+        ["数据表", "核心字段", "用途"],
+        [
+            ["listings", "listing_id, host_id, room_type, price, availability_365, review_scores_rating", "房源供给、价格、房东和口碑分析"],
+            ["calendar", "listing_id, date, available, minimum_nights", "未来可订率、季节性和日历结构"],
+            ["reviews", "listing_id, id, date, comments", "文本分析、月度评论活跃度"],
+            ["neighbourhoods.geojson", "neighbourhood, geometry", "地图和社区空间分析"],
+        ],
+        "表 2-2 核心数据表与字段",
+        [1.3, 4.2, 2.3],
+    )
+
+    doc.add_heading("2.3 数据预处理说明", level=2)
+    doc.add_heading("2.3.1 数据清洗", level=3)
+    _body(
+        doc,
+        f"价格字段先去除货币符号和千分位后转数值。香港识别 1011 条价格缺失（15.3%）和 113 条 1%–99% 异常值；"
+        f"新加坡识别 480 条价格缺失（15.0%）和 57 条异常值。异常值保留记录并标记，不直接删除。"
+        "评论按 city_key + review_id 去重，香港删除 248 条重复评论，新加坡删除 4809 条；原始评论和清洗日志均保留。"
+    )
+    doc.add_heading("2.3.2 数据集成", level=3)
+    _body(doc, "以 city_key + listing_id 建立跨城市唯一房源键，以 city_key + host_id 建立房东键。日历和评论通过 listing_key 关联房源维度；两地未匹配记录均为 0。大事实表使用 Parquet，维度和汇总结果使用 SQLite。")
+    doc.add_heading("2.3.3 数据选取", level=3)
+    _body(doc, "分析使用两城最新快照的全部有效房源；描述统计保留价格缺失，价格模型只使用清洗后有效价格；空间分析只排除经纬度缺失或越界记录。评论文本分析使用去重后的评论正文，不把评论数量解释为真实订单量。")
+    doc.add_heading("2.3.4 数据转换", level=3)
+    for text in [
+        "价格拆分为 price_local、price_clean 和 price_outlier。",
+        "从 bathrooms_text 解析卫浴数量、共享或独立属性。",
+        "根据房东房源数量划分单房源、小型多房源和专业多房源房东。",
+        "生成可订率、评论月度、经营类型和社区供需指标。",
+        "occupancy_estimate_valid 仅保留 [0,1] 范围内的估计值，非法值不参与该指标分析。",
+    ]:
+        _bullet(doc, text)
+
+    doc.add_heading("2.4 集成后的数据统计分析—Python", level=2)
+    _body(
+        doc,
+        f"香港房源数量为 {int(hk['listing_count']):,} 套，约为新加坡 {int(sg['listing_count']):,} 套的 {hk['listing_count']/sg['listing_count']:.2f} 倍。"
+        f"香港和新加坡独立房间占比分别为 {hk['private_room_share']:.1%} 和 {sg['private_room_share']:.1%}，说明两城短租供给都以房间型产品为主。"
+        f"香港价格中位数为 {hk['price_median_local']:.2f} HKD/晚，新加坡为 {sg['price_median_local']:.2f} SGD/晚；由于币种不同，不作绝对价格高低判断。"
+    )
+    _table(
+        doc,
+        ["指标", "香港", "新加坡"],
+        [
+            ["房源数量", f"{int(hk['listing_count']):,}", f"{int(sg['listing_count']):,}"],
+            ["房东数量", f"{int(hk['host_count']):,}", f"{int(sg['host_count']):,}"],
+            ["整套房源占比", f"{hk['entire_home_share']:.2%}", f"{sg['entire_home_share']:.2%}"],
+            ["独立房间占比", f"{hk['private_room_share']:.2%}", f"{sg['private_room_share']:.2%}"],
+            ["价格中位数（本币/晚）", f"{hk['price_median_local']:.2f} HKD", f"{sg['price_median_local']:.2f} SGD"],
+            ["平均评分", f"{hk['review_score_mean']:.3f}", f"{sg['review_score_mean']:.3f}"],
+            ["专业多房源房东占比", f"{hk['professional_host_share']:.2%}", f"{sg['professional_host_share']:.2%}"],
+        ],
+        "表 2-3 两城核心描述统计",
+        [2.7, 2.0, 2.0],
+    )
+    _figure(doc, CHARTS_DIR / "01_city_listing_count.png", "图 2-1 香港与新加坡房源总量对比", 5.8)
+    _figure(doc, CHARTS_DIR / "02_room_type_share.png", "图 2-2 两地房型结构占比", 6.0)
+    _figure(doc, CHARTS_DIR / "03_price_distribution.png", "图 2-3 清洗后房源价格分布（本币/晚）", 5.8)
+
+    doc.add_heading("2.5 集成后的数据统计分析—Excel 或 XX 工具", level=2)
+    _body(doc, "分析结果已整理为 outputs/excel/香港新加坡短租多维分析.xlsx，包含说明、香港房源、新加坡房源、城市对比、社区统计、房型统计、月度评论、房东经营、房东集中度、供需匹配、KMeans 画像、趋势状态和字段说明等工作表。所有表头已冻结并设置筛选，可直接建立透视表。")
+    _table(
+        doc,
+        ["Excel 工作表", "主要分析维度"],
+        [
+            ["香港房源 / 新加坡房源", "城市 × 社区 × 房型 × 价格 × 评分 × 经营类型"],
+            ["城市对比 / 房型统计", "城市 × 房型 × 供给占比 × 价格"],
+            ["社区统计 / 供需匹配", "社区 × 房源密度 × 供给指数 × 需求代理 × 匹配指数"],
+            ["月度评论", "城市 × 年月 × 评论活动"],
+            ["房东经营 / 房东集中度", "房东类型 × 房源数 × HHI × Gini"],
+        ],
+        "表 2-4 Excel 多维分析结构",
+        [2.8, 4.5],
+    )
+
+    doc.add_page_break()
+    doc.add_heading("3 数据多维分析与可视化", level=1)
+    doc.add_heading("3.1 XX 数据多维分析—Excel", level=2)
+    doc.add_heading("3.1.1 数据源设置", level=3)
+    _body(doc, "Excel 工作簿的数据源来自项目清洗后的 Parquet/CSV 导出，不使用手工录入的统计值。每个工作表采用一行一条记录的结构，便于使用 Excel 表格和数据透视表。")
+    doc.add_heading("3.1.2 建立多维数据集", level=3)
+    _body(doc, "多维数据集以城市、社区、房型、月份和房东类型为主要维度，以房源数量、价格、评分、评论活动、可订率和供需指数为度量。跨城市绝对价格不作直接比较。")
+    doc.add_heading("3.1.3 维度设计", level=3)
+    _body(doc, "城市维度用于两城对比；社区维度用于区域内供给和价格差异；房型维度区分整套、独立房间、合住和酒店房间；月份维度用于评论活动；房东类型用于识别单房源、小型多房源和专业多房源房东。")
+    doc.add_heading("3.1.4 多维数据浏览分析", level=3)
+    _body(doc, "用户可以按城市、社区、房型筛选，并观察价格中位数、评分、评论数量和可订率的变化。Excel 表格的自动筛选与冻结表头保证可以快速进行钻取。")
+    doc.add_heading("3.1.5 数据钻取", level=3)
+    _body(doc, "钻取路径为“城市 → 社区 → 房型 → 房源”，同时在社区层与供需匹配表关联。报告中的判断必须配合样本量和缺失率一起阅读。")
+
+    doc.add_heading("3.2 XX 数据多维分析—Power BI/帆软", level=2)
+    _body(doc, "项目输出 Power BI-ready CSV 和模型关系说明，包含 dim_city、dim_listing、dim_neighbourhood、dim_date、fact_listing_snapshot、fact_calendar_monthly、fact_review_monthly、fact_google_trends、supply_demand_district 等文件。由于没有自动生成 PBIX 文件，本文不虚构 Power BI 文件已经生成。")
+    _body(doc, "建议的 DAX 指标包括房源总数、房东总数、整套房源占比、有效价格中位数、平均评分、未来可订率、专业房东占比、供需匹配指数和潜在机会社区数。具体表达式见 outputs/powerbi/PowerBI模型说明.md。")
+
+    doc.add_heading("3.3 XX 数据—网络分析—Gephi", level=2)
+    _body(doc, f"网络分析只保留多房源房东及其真实房源关系，生成房东节点、房源节点和社区节点。网络包含 {results['network']['nodes']:,} 个节点和 {results['network']['edges']:,} 条边，其中房东—房源边和房源—社区边各 8,386 条。网络文件包括 GEXF、nodes.csv 和 edges.csv。")
+    _table(
+        doc,
+        ["网络指标", "数值"],
+        [
+            ["节点数", f"{results['network']['nodes']:,}"],
+            ["边数", f"{results['network']['edges']:,}"],
+            ["连通分量", results["network"]["connected_components"]],
+            ["最大连通分量节点", f"{results['network']['largest_component_nodes']:,}"],
+            ["网络密度", f"{results['network']['density']:.6f}"],
+        ],
+        "表 3-1 多房源房东网络指标",
+        [3.0, 2.0],
+    )
+
+    doc.add_heading("3.4 XX 数据分析展示—ECharts", level=2)
+    _body(doc, "项目生成可离线打开的 ECharts 看板 outputs/charts/echarts/dashboard.html，包含城市房源量、房型结构、价格箱线图、社区密度、社区价格热力图、月度评论、房东结构、价格与评分散点、K-Means 聚类、供需四象限和城市雷达图。所有图表均使用真实清洗数据。")
+    _figure(doc, CHARTS_DIR / "11a_echarts_top.png", "图 3-1 ECharts 看板：城市、房型、价格与供给结构", 6.3)
+    _figure(doc, CHARTS_DIR / "11b_echarts_mid.png", "图 3-2 ECharts 看板：评论、房东、聚类与趋势状态", 6.3)
+    _figure(doc, CHARTS_DIR / "11c_echarts_bottom.png", "图 3-3 ECharts 看板：供需四象限与城市雷达图", 6.3)
+
+    doc.add_heading("3.5 XX 文本数据—词云图", level=2)
+    _body(doc, "评论文本先去 HTML 标签、统一空白并去除英文停用词，再使用 CountVectorizer 和 TF-IDF 提取高频词。词云只展示真实评论文本，不把评论数量解释为订单量。")
+    _figure(doc, CHARTS_DIR / "10_hong-kong_review_wordcloud.png", "图 3-4 香港 Airbnb 评论词云", 6.2)
+    _figure(doc, CHARTS_DIR / "10_singapore_review_wordcloud.png", "图 3-5 新加坡 Airbnb 评论词云", 6.2)
+    for city_key, city_name in [("hong-kong", "香港"), ("singapore", "新加坡")]:
+        top = results["terms"][results["terms"]["city_key"] == city_key].head(8)
+        _body(doc, f"{city_name}高频词包括：" + "、".join(top["term"].astype(str).tolist()) + "。这些词反映位置、清洁、房东服务、房间和交通等体验主题，但不能替代结构化满意度量表。")
+
+    doc.add_heading("3.6 XX 数据—XX 工具", level=2)
+    _body(doc, "本项目在自选工具部分补充了空间分析、K-Means 经营类型、随机森林房价模型、DBSCAN 空间聚类、HHI/Gini 房东集中度、社区供需匹配和 Streamlit 决策支持系统。")
+
+    doc.add_heading("3.6.1 空间分析与社区价格差异", level=3)
+    _body(doc, f"香港和新加坡分别形成 {results['spatial']['clusters']['hong-kong']} 和 {results['spatial']['clusters']['singapore']} 个 DBSCAN 空间簇，噪声点分别为 {results['spatial']['noise']['hong-kong']} 和 {results['spatial']['noise']['singapore']}。地图显示房源高度集中于核心商业和旅游区域。")
+    _figure(doc, CHARTS_DIR / "04_hong-kong_district_price_map.png", "图 3-6 香港各区房源价格中位数", 5.9)
+    _figure(doc, CHARTS_DIR / "04_singapore_district_price_map.png", "图 3-7 新加坡各区房源价格中位数", 5.9)
+
+    doc.add_heading("3.6.2 K-Means 经营类型", level=3)
+    _body(doc, "K-Means 特征包括 log 价格、log 评论数、评分、log 最低入住天数、可订天数、log 房东房源数、容量、log 卧室数和整套房源标记。香港选择 k=5，Silhouette=0.312；新加坡选择 k=4，Silhouette=0.241。")
+    profile_rows = []
+    for _, row in results["kmeans"].iterrows():
+        profile_rows.append([
+            row["city_name"], row["operating_type"], int(row["listing_count"]), f"{row['price_median_local']:.2f}",
+            f"{row['reviews_median']:.0f}", f"{row['rating_mean']:.2f}", f"{row['minimum_nights_median']:.0f}", f"{row['availability_median']:.0f}",
+        ])
+    _table(
+        doc,
+        ["城市", "经营类型", "房源数", "价格中位数", "评论中位数", "评分", "最低入住", "可订天数"],
+        profile_rows,
+        "表 3-2 K-Means 经营类型画像",
+        [0.9, 1.5, 0.8, 1.0, 0.9, 0.7, 0.8, 0.8],
+    )
+    _figure(doc, CHARTS_DIR / "05_hong-kong_kmeans_clusters.png", "图 3-8 香港房源经营类型聚类", 6.0)
+    _figure(doc, CHARTS_DIR / "05_singapore_kmeans_clusters.png", "图 3-9 新加坡房源经营类型聚类", 6.0)
+
+    doc.add_heading("3.6.3 房价影响因素与预测模型", level=3)
+    _body(doc, "房价模型使用 log1p(price_clean) 作为目标，分别对两个城市训练线性回归和随机森林。随机森林在两个城市均取得更高的测试集 R² 和更低的误差。")
+    _table(
+        doc,
+        ["城市/模型", "R²(log)", "MAE(log)", "RMSE(log)", "R²(价格)", "MAE(本币)"],
+        [
+            ["香港-线性回归", f"{hk_model['metrics']['linear_regression']['r2_log']:.3f}", f"{hk_model['metrics']['linear_regression']['mae_log']:.3f}", f"{hk_model['metrics']['linear_regression']['rmse_log']:.3f}", f"{hk_model['metrics']['linear_regression']['r2_price']:.3f}", f"{hk_model['metrics']['linear_regression']['mae_price_local']:.2f}"],
+            ["香港-随机森林", f"{hk_model['metrics']['random_forest']['r2_log']:.3f}", f"{hk_model['metrics']['random_forest']['mae_log']:.3f}", f"{hk_model['metrics']['random_forest']['rmse_log']:.3f}", f"{hk_model['metrics']['random_forest']['r2_price']:.3f}", f"{hk_model['metrics']['random_forest']['mae_price_local']:.2f}"],
+            ["新加坡-线性回归", f"{sg_model['metrics']['linear_regression']['r2_log']:.3f}", f"{sg_model['metrics']['linear_regression']['mae_log']:.3f}", f"{sg_model['metrics']['linear_regression']['rmse_log']:.3f}", f"{sg_model['metrics']['linear_regression']['r2_price']:.3f}", f"{sg_model['metrics']['linear_regression']['mae_price_local']:.2f}"],
+            ["新加坡-随机森林", f"{sg_model['metrics']['random_forest']['r2_log']:.3f}", f"{sg_model['metrics']['random_forest']['mae_log']:.3f}", f"{sg_model['metrics']['random_forest']['rmse_log']:.3f}", f"{sg_model['metrics']['random_forest']['r2_price']:.3f}", f"{sg_model['metrics']['random_forest']['mae_price_local']:.2f}"],
+        ],
+        "表 3-3 房价模型测试集结果",
+        [1.5, 0.8, 0.8, 0.9, 0.9, 1.0],
+    )
+    _body(doc, "从随机森林特征重要性看，容量、房型、最低入住天数、房东房源数量、卧室数、可订天数和评论活动对挂牌价格有较强贡献。该结果反映平台公开价格的结构关联，不能解释为真实成交价或因果效应。")
+    _figure(doc, CHARTS_DIR / "07_hong-kong_price_feature_importance.png", "图 3-10 香港房价模型特征重要性", 5.8)
+    _figure(doc, CHARTS_DIR / "07_singapore_price_feature_importance.png", "图 3-11 新加坡房价模型特征重要性", 5.8)
+
+    doc.add_heading("3.6.4 房东竞争与集中度", level=3)
+    _body(doc, "HHI 和 Gini 只描述平台公开房源在房东之间的集中程度。香港房东 Gini 为 0.702，新加坡为 0.648；两地 HHI 分别为 132.86 和 123.96，处于较低水平，说明平台房源并未形成明显的单一房东垄断。")
+    _figure(doc, CHARTS_DIR / "08_host_lorenz_curve.png", "图 3-12 房东房源占有量 Lorenz 曲线", 5.8)
+
+    doc.add_heading("3.6.5 社区供需匹配", level=3)
+    _body(doc, "供给侧综合房源密度、房源数量、可订率、房东竞争程度和价格可负担性；需求侧使用最近 12 个月每房源评论数、评论总量和评论增长率。所有分项在城市内转为百分位指数。")
+    supply_rows = []
+    for _, row in results["supply_summary"].iterrows():
+        supply_rows.append([row["city_name"], row["market_strategy"], int(row["district_count"]), f"{row['median_match_index']:.3f}", int(row["listing_count"])])
+    _table(doc, ["城市", "市场类型", "社区数", "匹配指数中位数", "房源数"], supply_rows, "表 3-4 社区供需分型汇总", [1.0, 1.5, 0.9, 1.4, 1.0])
+    _body(doc, "香港潜在机会社区主要出现在 North、Tsuen Wan、Islands 等区域；新加坡包括 Queenstown、Clementi、Pasir Ris 等。部分社区房源数较少，必须结合样本量、监管条件和实际入住需求进一步核查。")
+    _figure(doc, CHARTS_DIR / "09_hong-kong_supply_demand.png", "图 3-13 香港社区供需四象限", 6.0)
+    _figure(doc, CHARTS_DIR / "09_singapore_supply_demand.png", "图 3-14 新加坡社区供需四象限", 6.0)
+
+    doc.add_heading("3.6.6 Streamlit 决策支持系统", level=3)
+    _body(doc, "系统使用 Streamlit 开发，包含项目总览、数据管理中心、市场供给分析、需求关注分析、数据挖掘实验室、供需匹配分析、经营决策中心和研究报告中心八个页面。筛选器会实际影响图表，需求趋势数据按实际导入状态展示。")
+    _figure(doc, CHARTS_DIR / "12_streamlit_dashboard.png", "图 3-15 系统项目总览页面", 6.3)
+    _figure(doc, CHARTS_DIR / "13_streamlit_supply.png", "图 3-16 市场供给分析筛选与图表联动", 6.3)
+    _figure(doc, CHARTS_DIR / "14_streamlit_decision_result.png", "图 3-17 经营决策中心的可解释建议结果", 6.3)
+
+    doc.add_page_break()
+    doc.add_heading("4 总结与展望", level=1)
+    _body(
+        doc,
+        "本项目完成了从公开数据获取、清洗、维度建模、统计分析、空间分析、聚类、回归、网络分析和供需匹配到交互式决策支持系统的完整流程。"
+        "结果表明，两座城市均以房间型短租供给为主，但价格、房东结构和社区供需格局存在差异；随机森林优于线性回归，供需四象限能够帮助识别潜在机会和供给压力区域。"
+    )
+    _body(
+        doc,
+        "研究仍存在限制：Inside Airbnb 价格是挂牌价格而不是成交价格；评论量不是订单量；可订状态不是入住率；Google Trends 尚未取得；两城快照相差三天；聚类和供需指数对样本量和研究口径敏感。"
+        "后续应导入真实 Google Trends 数据、补充官方旅游和人口背景、比较多个季度快照，并加入时间序列验证和更严格的稳健性检验。"
+    )
+
+    doc.add_heading("参考文献", level=1)
+    for ref in [
+        "Inside Airbnb. Get the Data. https://insideairbnb.com/get-the-data/，访问日期：2026-11-07.",
+        "Inside Airbnb. Data Policies and Attribution. https://insideairbnb.com/data-policies/.",
+        "Google Trends. https://trends.google.com/trends/.",
+        "scikit-learn developers. scikit-learn: Machine Learning in Python.",
+        "NetworkX developers. NetworkX Documentation.",
+        "World Wide Web Consortium. Geospatial data and GeoJSON.",
+    ]:
+        p = doc.add_paragraph(ref)
+        p.paragraph_format.first_line_indent = Pt(0)
+        p.paragraph_format.left_indent = Pt(18)
+        p.paragraph_format.first_line_indent = Pt(-18)
+        p.paragraph_format.line_spacing = 1.15
+
+    doc.add_heading("附录：项目交付文件", level=1)
+    _table(
+        doc,
+        ["类别", "路径"],
+        [
+            ["原始数据", "data/raw/hong-kong/2026-09-20、data/raw/singapore/2026-09-23"],
+            ["清洗数据", "data/processed/*.parquet、data/processed/analytics.sqlite"],
+            ["数据清单", "data_manifest.json、data/processed/warehouse_manifest.json"],
+            ["分析结果", "outputs/tables/"],
+            ["图表", "outputs/charts/"],
+            ["Excel", "outputs/excel/香港新加坡短租多维分析.xlsx"],
+            ["Power BI", "outputs/powerbi/"],
+            ["Gephi", "outputs/gephi/"],
+            ["ECharts", "outputs/charts/echarts/dashboard.html"],
+            ["系统", "app.py、pages/、src/"],
+            ["文档", "docs/、README.md"],
+        ],
+        "表 A-1 项目交付物目录",
+        [1.5, 5.5],
+    )
+
+    doc.save(DOCX_PATH)
+    return DOCX_PATH
+
+
+if __name__ == "__main__":
+    print(generate())

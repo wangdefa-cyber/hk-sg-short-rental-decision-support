@@ -1,0 +1,42 @@
+project:
+  name: 城市短租平台供需匹配与经营决策支持系统
+  cities: [hong-kong, singapore]
+  raw_data_root: data/raw
+  processed_data_root: data/processed
+  external_data_root: data/external
+
+data:
+  hong-kong:
+    display_name: 香港
+    snapshot: '2026-09-20'
+    currency_code: HKD
+  singapore:
+    display_name: 新加坡
+    snapshot: '2026-09-23'
+    currency_code: SGD
+
+analysis:
+  random_seed: 42
+  test_size: 0.2
+  max_k: 8
+  min_cluster_size: 2
+  google_trends_frequency: monthly
+  supply_demand_epsilon: 0.000001
+
+report:
+  template: DM课程中期报告-模板-2026-10.doc
+  formal_city_names:
+    hong-kong: 中国香港
+    singapore: 新加坡
+
+google_trends:
+  status: missing
+  reason: trends.google.com network unreachable from execution environment
+  files:
+    - 01_hk_tourism.csv
+    - 02_sg_tourism.csv
+    - 03_hk_airbnb.csv
+    - 04_sg_airbnb.csv
+    - 05_hk_accommodation.csv
+    - 06_sg_accommodation.csv
+    - 07_airbnb_region_compare.csv

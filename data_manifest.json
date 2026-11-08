@@ -1,0 +1,217 @@
+{
+  "project": "城市短租平台供需匹配与经营决策支持系统",
+  "generated_at": "2026-11-08T13:54:16.916086+00:00",
+  "inside_airbnb": [
+    {
+      "city": "hong-kong",
+      "snapshot_date": "2026-09-20",
+      "original_filename": "listings.csv.gz",
+      "source_url": "https://data.insideairbnb.com/china/hk/hong-kong/2026-09-20/data/listings.csv.gz",
+      "download_date": "2026-11-07",
+      "size_bytes": 2858916,
+      "sha256": "42513d2d330ac57df5682ac8b8c5fb90c098d8c7ad7b78e50bdc029704d1be04",
+      "status": "present"
+    },
+    {
+      "city": "hong-kong",
+      "snapshot_date": "2026-09-20",
+      "original_filename": "calendar.csv.gz",
+      "source_url": "https://data.insideairbnb.com/china/hk/hong-kong/2026-09-20/data/calendar.csv.gz",
+      "download_date": "2026-11-07",
+      "size_bytes": 5538124,
+      "sha256": "4f259c0f486027ff2a9a94c6943a9ec6797ede5fbaf18a4858887d058fa98d57",
+      "status": "present"
+    },
+    {
+      "city": "hong-kong",
+      "snapshot_date": "2026-09-20",
+      "original_filename": "reviews.csv.gz",
+      "source_url": "https://data.insideairbnb.com/china/hk/hong-kong/2026-09-20/data/reviews.csv.gz",
+      "download_date": "2026-11-07",
+      "size_bytes": 15148030,
+      "sha256": "649c3d4d9bee0eb05e5ed73ec16db2725cd5409e2eec365b1759bd9fd0d62394",
+      "status": "present"
+    },
+    {
+      "city": "hong-kong",
+      "snapshot_date": "2026-09-20",
+      "original_filename": "neighbourhoods.csv",
+      "source_url": "https://data.insideairbnb.com/china/hk/hong-kong/2026-09-20/visualisations/neighbourhoods.csv",
+      "download_date": "2026-11-07",
+      "size_bytes": 237,
+      "sha256": "c8b7c04ce801b55b22dd4ba46442c95fbd3011cff9eb53ccc46f14c3324c0226",
+      "status": "present"
+    },
+    {
+      "city": "hong-kong",
+      "snapshot_date": "2026-09-20",
+      "original_filename": "neighbourhoods.geojson",
+      "source_url": "https://data.insideairbnb.com/china/hk/hong-kong/2026-09-20/visualisations/neighbourhoods.geojson",
+      "download_date": "2026-11-07",
+      "size_bytes": 405968,
+      "sha256": "6ed6f92b9463ae32e7173668d6cd57c3e358a5a9b51c07e52ebc30a19956cd1d",
+      "status": "present"
+    },
+    {
+      "city": "singapore",
+      "snapshot_date": "2026-09-23",
+      "original_filename": "listings.csv.gz",
+      "source_url": "https://data.insideairbnb.com/singapore/sg/singapore/2026-09-23/data/listings.csv.gz",
+      "download_date": "2026-11-07",
+      "size_bytes": 1274919,
+      "sha256": "96dcc23048a03631aec9bbeee2f1e39b3bef871fc614e7a573df2e7dd42cb037",
+      "status": "present"
+    },
+    {
+      "city": "singapore",
+      "snapshot_date": "2026-09-23",
+      "original_filename": "calendar.csv.gz",
+      "source_url": "https://data.insideairbnb.com/singapore/sg/singapore/2026-09-23/data/calendar.csv.gz",
+      "download_date": "2026-11-07",
+      "size_bytes": 2685997,
+      "sha256": "62635a1ffd91bf87b43c7ec32f4a3059f9341e6eb82bd3ff71cc9592a0b0ece3",
+      "status": "present"
+    },
+    {
+      "city": "singapore",
+      "snapshot_date": "2026-09-23",
+      "original_filename": "reviews.csv.gz",
+      "source_url": "https://data.insideairbnb.com/singapore/sg/singapore/2026-09-23/data/reviews.csv.gz",
+      "download_date": "2026-11-07",
+      "size_bytes": 5239810,
+      "sha256": "a84abeddb76491520626678f979c64c8f8925c881413d0a4043dac457a689ea3",
+      "status": "present"
+    },
+    {
+      "city": "singapore",
+      "snapshot_date": "2026-09-23",
+      "original_filename": "neighbourhoods.csv",
+      "source_url": "https://data.insideairbnb.com/singapore/sg/singapore/2026-09-23/visualisations/neighbourhoods.csv",
+      "download_date": "2026-11-07",
+      "size_bytes": 1405,
+      "sha256": "b230353c2a7a71b53f6f79fa61b3010754b3b2260a70eff66e3e20df735ce38b",
+      "status": "present"
+    },
+    {
+      "city": "singapore",
+      "snapshot_date": "2026-09-23",
+      "original_filename": "neighbourhoods.geojson",
+      "source_url": "https://data.insideairbnb.com/singapore/sg/singapore/2026-09-23/visualisations/neighbourhoods.geojson",
+      "download_date": "2026-11-07",
+      "size_bytes": 858448,
+      "sha256": "109c75391b9726e2d760642ae02be372dfa7276dd12954f741e7ab22ac41b425",
+      "status": "present"
+    }
+  ],
+  "google_trends": [
+    {
+      "filename": "hk_travel.csv",
+      "description": "香港：Hong Kong travel（Worldwide 月度搜索兴趣）",
+      "city_key": "hong-kong",
+      "keyword_group": "tourism",
+      "query_region": "Worldwide",
+      "status": "present",
+      "source_url": "https://trends.google.com/trends/explore",
+      "required_settings": "Web Search; past 5 years; CSV; separately exported single-keyword series",
+      "size_bytes": 1002,
+      "sha256": "cd9f52ed539ee2dc6ccb6a9140d50174843fbc4cd9d4c133190add957cc244be",
+      "download_date": "2026-11-07"
+    },
+    {
+      "filename": "hk_hotel.csv",
+      "description": "香港：Hong Kong hotel（Worldwide 月度搜索兴趣）",
+      "city_key": "hong-kong",
+      "keyword_group": "accommodation",
+      "query_region": "Worldwide",
+      "status": "present",
+      "source_url": "https://trends.google.com/trends/explore",
+      "required_settings": "Web Search; past 5 years; CSV; separately exported single-keyword series",
+      "size_bytes": 1002,
+      "sha256": "02b4790f176e8fe5a4e36d367693a6964f13578ca1bcc65dfcdb1055dc4de4ab",
+      "download_date": "2026-11-07"
+    },
+    {
+      "filename": "hk_airbnb.csv",
+      "description": "香港：Airbnb Hong Kong（Worldwide 月度搜索兴趣）",
+      "city_key": "hong-kong",
+      "keyword_group": "airbnb",
+      "query_region": "Worldwide",
+      "status": "present",
+      "source_url": "https://trends.google.com/trends/explore",
+      "required_settings": "Web Search; past 5 years; CSV; separately exported single-keyword series",
+      "size_bytes": 999,
+      "sha256": "afb3e87dde0ff4bf18b9663fe382286696d151118ac9cc5217d0f81305c53628",
+      "download_date": "2026-11-07"
+    },
+    {
+      "filename": "sg_travel.csv",
+      "description": "新加坡：Singapore travel（Worldwide 月度搜索兴趣）",
+      "city_key": "singapore",
+      "keyword_group": "tourism",
+      "query_region": "Worldwide",
+      "status": "present",
+      "source_url": "https://trends.google.com/trends/explore",
+      "required_settings": "Web Search; past 5 years; CSV; separately exported single-keyword series",
+      "size_bytes": 1002,
+      "sha256": "728efe9a661e783d597b7caed20a429c928984cecb6f49ddf3b52c605877903e",
+      "download_date": "2026-11-07"
+    },
+    {
+      "filename": "sg_hotel.csv",
+      "description": "新加坡：Singapore hotel（Worldwide 月度搜索兴趣）",
+      "city_key": "singapore",
+      "keyword_group": "accommodation",
+      "query_region": "Worldwide",
+      "status": "present",
+      "source_url": "https://trends.google.com/trends/explore",
+      "required_settings": "Web Search; past 5 years; CSV; separately exported single-keyword series",
+      "size_bytes": 1001,
+      "sha256": "e97c24281df2d56c0fd85de374e900a2c52cd6858e7f0e8cc8d96f53f3716422",
+      "download_date": "2026-11-07"
+    },
+    {
+      "filename": "sg_airbnb.csv",
+      "description": "新加坡：Airbnb Singapore（Worldwide 月度搜索兴趣）",
+      "city_key": "singapore",
+      "keyword_group": "airbnb",
+      "query_region": "Worldwide",
+      "status": "present",
+      "source_url": "https://trends.google.com/trends/explore",
+      "required_settings": "Web Search; past 5 years; CSV; separately exported single-keyword series",
+      "size_bytes": 1002,
+      "sha256": "2f004dc315ef5255cf3cf80e8cc57c81967ea00363559f8eda8c34f321671c4b",
+      "download_date": "2026-11-07"
+    },
+    {
+      "filename": "airbnb_global.csv",
+      "description": "全球：Airbnb（Worldwide 月度搜索兴趣）",
+      "city_key": "global",
+      "keyword_group": "airbnb",
+      "query_region": "Worldwide",
+      "status": "present",
+      "source_url": "https://trends.google.com/trends/explore",
+      "required_settings": "Web Search; past 5 years; CSV; separately exported single-keyword series",
+      "size_bytes": 992,
+      "sha256": "d7147382ac84cb1cdcf1a85ea7c55e85b0919c1016cc9d325b882f89718dcdd1",
+      "download_date": "2026-11-07"
+    },
+    {
+      "filename": "airbnb_top_queries_global.csv",
+      "description": "全球 Airbnb 相关搜索词 Top 50",
+      "city_key": "global",
+      "keyword_group": "airbnb_related_queries",
+      "query_region": "Worldwide",
+      "status": "present",
+      "source_url": "https://trends.google.com/trends/explore",
+      "required_settings": "Web Search; past 5 years; CSV; separately exported single-keyword series",
+      "size_bytes": 1255,
+      "sha256": "cf91d1bdc6d539651ccaca9237589de3c1d23f47d3cff019e1b3c9e14d1e7a3b",
+      "download_date": "2026-11-07"
+    }
+  ],
+  "notes": [
+    "Google Trends values are relative search-interest indices, not absolute search volumes.",
+    "The two Inside Airbnb snapshots differ by three days and must not be treated as perfectly synchronized observations.",
+    "Listing IDs are unique only within each city dataset."
+  ]
+}

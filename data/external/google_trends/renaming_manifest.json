@@ -1,0 +1,54 @@
+{
+  "renamed_at": "2026-11-08T20:46:24",
+  "note": "Original CSV contents were not modified.",
+  "files": [
+    {
+      "original_filename": "searched_with_top-searches_queries_Worldwide_20211108-2044_20261108-2044.csv",
+      "new_filename": "airbnb_top_queries_global.csv",
+      "size_bytes": 1255,
+      "sha256": "cf91d1bdc6d539651ccaca9237589de3c1d23f47d3cff019e1b3c9e14d1e7a3b"
+    },
+    {
+      "original_filename": "time_series_Worldwide_20211108-2040_20261108-2040.csv",
+      "new_filename": "hk_travel.csv",
+      "size_bytes": 1002,
+      "sha256": "cd9f52ed539ee2dc6ccb6a9140d50174843fbc4cd9d4c133190add957cc244be"
+    },
+    {
+      "original_filename": "time_series_Worldwide_20211108-2040_20261108-2040 (1).csv",
+      "new_filename": "hk_hotel.csv",
+      "size_bytes": 1002,
+      "sha256": "02b4790f176e8fe5a4e36d367693a6964f13578ca1bcc65dfcdb1055dc4de4ab"
+    },
+    {
+      "original_filename": "time_series_Worldwide_20211108-2040_20261108-2040 (2).csv",
+      "new_filename": "hk_airbnb.csv",
+      "size_bytes": 999,
+      "sha256": "afb3e87dde0ff4bf18b9663fe382286696d151118ac9cc5217d0f81305c53628"
+    },
+    {
+      "original_filename": "time_series_Worldwide_20211108-2042_20261108-2042.csv",
+      "new_filename": "sg_travel.csv",
+      "size_bytes": 1002,
+      "sha256": "728efe9a661e783d597b7caed20a429c928984cecb6f49ddf3b52c605877903e"
+    },
+    {
+      "original_filename": "time_series_Worldwide_20211108-2042_20261108-2042 (1).csv",
+      "new_filename": "sg_hotel.csv",
+      "size_bytes": 1001,
+      "sha256": "e97c24281df2d56c0fd85de374e900a2c52cd6858e7f0e8cc8d96f53f3716422"
+    },
+    {
+      "original_filename": "time_series_Worldwide_20211108-2042_20261108-2042 (2).csv",
+      "new_filename": "sg_airbnb.csv",
+      "size_bytes": 1002,
+      "sha256": "2f004dc315ef5255cf3cf80e8cc57c81967ea00363559f8eda8c34f321671c4b"
+    },
+    {
+      "original_filename": "time_series_Worldwide_20211108-2043_20261108-2043.csv",
+      "new_filename": "airbnb_global.csv",
+      "size_bytes": 992,
+      "sha256": "d7147382ac84cb1cdcf1a85ea7c55e85b0919c1016cc9d325b882f89718dcdd1"
+    }
+  ]
+}
