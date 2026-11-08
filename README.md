@@ -8,7 +8,7 @@
 - 数据清洗、Parquet/SQLite 数据仓库、描述统计、空间分析、K-Means、随机森林、HDBSCAN/DBSCAN、房东集中度、文本分析、Gephi 网络、Excel、Power BI 数据源、ECharts 看板和 Streamlit 系统已生成。
 - Google Trends 已导入 8 个真实文件：7 条月度序列和 1 个全球相关搜索词表。跨序列分析使用 z-score 与月度变化，不直接比较独立归一化后的原始 0–100 指数。
 - 课程中期报告 DOCX/PDF 草稿已生成。
-- 自动测试：21 项全部通过。
+- 自动测试：22 项全部通过。
 
 ## 一键运行
 

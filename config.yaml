@@ -30,13 +30,17 @@ report:
     singapore: 新加坡
 
 google_trends:
-  status: missing
-  reason: trends.google.com network unreachable from execution environment
+  status: imported
+  download_date: '2026-11-08'
+  query_region: Worldwide
+  frequency: monthly
+  normalization: per-series z-score for cross-series comparison
   files:
-    - 01_hk_tourism.csv
-    - 02_sg_tourism.csv
-    - 03_hk_airbnb.csv
-    - 04_sg_airbnb.csv
-    - 05_hk_accommodation.csv
-    - 06_sg_accommodation.csv
-    - 07_airbnb_region_compare.csv
+    - hk_travel.csv
+    - hk_hotel.csv
+    - hk_airbnb.csv
+    - sg_travel.csv
+    - sg_hotel.csv
+    - sg_airbnb.csv
+    - airbnb_global.csv
+    - airbnb_top_queries_global.csv

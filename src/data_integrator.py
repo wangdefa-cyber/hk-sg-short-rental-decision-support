@@ -76,6 +76,7 @@ LISTING_FACT_COLUMNS = [
     "reviews_per_month",
     "occupancy_estimate_raw",
     "occupancy_estimate_valid",
+    "occupancy_estimate_rate",
     "estimated_revenue_l365d",
     "is_entire_home",
     "is_private_room",
@@ -304,7 +305,7 @@ def build_warehouse() -> dict:
             "fact_review is deduplicated by city_key + review_id; duplicate review IDs are documented and removed.",
             "Prices are kept in local currency: HKD for Hong Kong and SGD for Singapore.",
             "price_clean excludes 1%-99% room-type outliers but keeps the original price and an outlier flag.",
-            "occupancy_estimate_valid only keeps values in [0, 1]; invalid values remain visible in the raw estimate column.",
+            "estimated_occupancy_l365d is interpreted as estimated booked nights (0-365); occupancy_estimate_rate = nights / 365.",
         ],
     }
     (PROCESSED_DIR / "warehouse_manifest.json").write_text(

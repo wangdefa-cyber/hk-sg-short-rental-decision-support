@@ -12,7 +12,6 @@ Follows the installed scientific-visualization skill:
 from __future__ import annotations
 
 import json
-import sys
 from pathlib import Path
 
 import matplotlib
@@ -26,10 +25,9 @@ from PIL import Image
 from src.config import CHARTS_DIR, PROCESSED_DIR, TABLES_DIR
 from src.demand_analysis import GROUP_NAMES
 
-SKILL_ROOT = Path(r"C:\Users\Auraro\.codex\skills\scientific-visualization")
-sys.path[:0] = [str(SKILL_ROOT / "scripts"), str(SKILL_ROOT / "assets")]
-from color_palettes import OKABE_ITO_ON_WHITE  # noqa: E402
-from style_presets import style_context  # noqa: E402
+# Okabe-Ito on-white subset, inlined for portability.
+# Contrast and grayscale checks are stored in outputs/reports/trend_palette_audit.txt.
+OKABE_ITO_ON_WHITE = ["#0072B2", "#D55E00", "#009E73", "#CC79A7", "#000000"]
 
 OUT = CHARTS_DIR / "trends"
 OUT.mkdir(parents=True, exist_ok=True)
@@ -203,7 +201,18 @@ def run() -> dict:
     seasonality = pd.read_csv(TABLES_DIR / "google_trends_seasonality_full_years.csv")
     corr = pd.read_csv(TABLES_DIR / "google_trends_review_correlation.csv")
     top = pd.read_csv(TABLES_DIR / "google_trends_top_queries.csv")
-    with style_context("default", palette_name="okabe_ito_on_white"):
+    with plt.rc_context({
+        "font.family": "sans-serif",
+        "font.sans-serif": ["Microsoft YaHei", "SimHei", "Arial Unicode MS", "DejaVu Sans"],
+        "axes.unicode_minus": False,
+        "pdf.fonttype": 42,
+        "ps.fonttype": 42,
+        "svg.fonttype": "none",
+        "axes.edgecolor": "#333333",
+        "axes.linewidth": 0.8,
+        "figure.facecolor": "white",
+        "savefig.facecolor": "white",
+    }):
         _base_style()
         p1, p2 = standardized_lines(monthly)
         p3, p4 = seasonality_plot(seasonality)

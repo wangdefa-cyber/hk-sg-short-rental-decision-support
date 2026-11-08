@@ -63,7 +63,7 @@ def render() -> None:
     low_sample = city[city["listing_count"] < 10]
     if not low_sample.empty:
         st.warning("部分社区房源少于 10 套，供需指数容易受少数房源影响，不宜直接作为投资依据。")
-    show_source("需求侧仅使用评论活动代理；Google Trends 尚未接入。M=D/(S+ε) 是研究性相对指标，不代表真实订单供需比。")
+    show_source("需求侧在社区层使用评论活动代理；Google Trends 仅作为城市级外部关注背景，不分配到社区。M=D/(S+ε) 是研究性相对指标，不代表真实订单供需比。")
 
 
 render()

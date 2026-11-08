@@ -254,7 +254,7 @@ def write_manifest(audit: dict[str, Any]) -> None:
         if path.exists():
             entry["size_bytes"] = path.stat().st_size
             entry["sha256"] = sha256_file(path)
-            entry["download_date"] = DOWNLOAD_DATE
+            entry["download_date"] = "2026-11-08"
         trends_entries.append(entry)
     manifest = {
         "project": "城市短租平台供需匹配与经营决策支持系统",

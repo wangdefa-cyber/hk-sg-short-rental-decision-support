@@ -155,8 +155,9 @@ def clean_listings(raw: pd.DataFrame, city_key: str) -> pd.DataFrame:
 
     df["occupancy_estimate_raw"] = _numeric(df["estimated_occupancy_l365d"])
     df["occupancy_estimate_valid"] = df["occupancy_estimate_raw"].where(
-        df["occupancy_estimate_raw"].between(0, 1)
+        df["occupancy_estimate_raw"].between(0, 365)
     )
+    df["occupancy_estimate_rate"] = df["occupancy_estimate_valid"] / 365
     df["price_per_guest"] = df["price_clean"] / df["accommodates"].replace(0, np.nan)
     df["price_per_bedroom"] = df["price_clean"] / df["bedrooms"].replace(0, np.nan)
     df["is_entire_home"] = df["room_type"].eq("Entire home/apt")

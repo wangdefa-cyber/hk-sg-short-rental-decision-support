@@ -19,7 +19,12 @@ if (-not (Test-Path -LiteralPath $python)) {
 & $python -m src.excel_export
 & $python -m src.powerbi_export
 & $python -m src.echarts_export
-node scripts/generate_report_docx.js
+$reportPath = Join-Path $PSScriptRoot "report\数据挖掘课程中期报告_香港新加坡短租分析_最终版.docx"
+if (-not (Test-Path -LiteralPath $reportPath)) {
+    node scripts/generate_report_docx.js
+} else {
+    Write-Host "检测到已有人工修改的最终报告，跳过 Word 自动重建并保留封面。"
+}
 & $python -m src.export_report_pdf
 & $python -m pytest -q
 

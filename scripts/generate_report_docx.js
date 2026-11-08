@@ -27,6 +27,7 @@ const network = readJson('outputs/tables/network_summary.json');
 const supply = readJson('outputs/tables/supply_demand_summary.json');
 const trends = readJson('outputs/tables/google_trends_summary.json');
 const quality = readJson('outputs/tables/warehouse_quality.json');
+const audit = readJson('outputs/tables/data_audit.json');
 const textSummary = readJson('outputs/tables/text_analysis_summary.json');
 const figureManifest = readJson('outputs/charts/trends/figure_manifest.json');
 
@@ -54,6 +55,14 @@ const travelCorr = parseCsv('outputs/tables/google_trends_review_correlation.csv
 const topQueries = parseCsv('outputs/tables/google_trends_top_queries.csv');
 const trendMetrics = parseCsv('outputs/tables/google_trends_series_metrics.csv');
 
+const hkAudit = audit.cities['hong-kong'].files;
+const sgAudit = audit.cities['singapore'].files;
+const hkQuality = quality.listing_quality['hong-kong'];
+const sgQuality = quality.listing_quality['singapore'];
+const hkReview = quality.review_deduplication['hong-kong'];
+const sgReview = quality.review_deduplication['singapore'];
+const hkPriceMissingRate = hkQuality.price_missing / hkQuality.rows * 100;
+const sgPriceMissingRate = sgQuality.price_missing / sgQuality.rows * 100;
 const hk = citySummary.find(x => x.city_key === 'hong-kong');
 const sg = citySummary.find(x => x.city_key === 'singapore');
 const hkModel = priceModels.models.find(x => x.city_key === 'hong-kong');
@@ -80,12 +89,9 @@ function pngRun(file, width, alt) {
 }
 
 function h(text, level) {
-  const size = level === 1 ? 32 : level === 2 ? 28 : 24;
   return new Paragraph({
     heading: level === 1 ? HeadingLevel.HEADING_1 : level === 2 ? HeadingLevel.HEADING_2 : HeadingLevel.HEADING_3,
-    outlineLevel: level - 1,
-    spacing: { before: level === 1 ? 360 : 240, after: level === 1 ? 240 : 140 },
-    children: [new TextRun({ text, bold: true, size, font: HEAD_FONT, color: NAVY })],
+    children: [new TextRun({ text })],
   });
 }
 
@@ -255,7 +261,7 @@ children.push(body('Inside Airbnb 提供城市级公开房源快照，包含房�
 children.push(body(`Google Trends 使用人工导出的 8 个真实 CSV 文件。其中 7 个为单个关键词的月度时间序列，1 个为全球 Airbnb 相关搜索词 Top 50。月度序列时间为 ${trends.date_min} 至 ${trends.date_max}，共 61 个月；7 条序列均无缺失值。由于每个文件独立归一化，原始指数不进行跨文件绝对水平比较。`));
 children.push(...table(
   ['城市', '快照日期', '房源', '日历记录', '评论', '社区边界'],
-  [['香港','2026-09-20',Number(hk.listing_count).toLocaleString(),'2,414,110','122,715','18'],['新加坡','2026-09-23',Number(sg.listing_count).toLocaleString(),'1,170,950','46,000','55']],
+  [['香港','2026-09-20',Number(hk.listing_count).toLocaleString(),Number(hkAudit['calendar.csv.gz'].row_count).toLocaleString(),Number(hkAudit['reviews.csv.gz'].row_count).toLocaleString(),Number(hkAudit['neighbourhoods.geojson'].feature_count).toLocaleString()],['新加坡','2026-09-23',Number(sg.listing_count).toLocaleString(),Number(sgAudit['calendar.csv.gz'].row_count).toLocaleString(),Number(sgAudit['reviews.csv.gz'].row_count).toLocaleString(),Number(sgAudit['neighbourhoods.geojson'].feature_count).toLocaleString()]],
   '表 2-1  原始数据规模', [1100,1300,1000,1300,1000,1000]
 ));
 children.push(h('2.2  数据表结构与数据示例', 2));
@@ -267,7 +273,7 @@ children.push(...table(
 ));
 children.push(h('2.3  数据预处理说明', 2));
 children.push(h('2.3.1  数据清洗', 3));
-children.push(body(`价格字段去除货币符号和千分位后转数值。香港识别 1,011 条价格缺失（15.3%）和 113 条异常值；新加坡识别 480 条价格缺失（15.0%）和 57 条异常值。异常值保留记录并标记，不直接删除。评论按 city_key + review_id 去重，香港删除 248 条重复评论，新加坡删除 4,809 条。`));
+children.push(body(`价格字段去除货币符号和千分位后转数值。香港识别 ${Number(hkQuality.price_missing).toLocaleString()} 条价格缺失（${hkPriceMissingRate.toFixed(1)}%）和 ${Number(hkQuality.price_outliers).toLocaleString()} 条异常值；新加坡识别 ${Number(sgQuality.price_missing).toLocaleString()} 条价格缺失（${sgPriceMissingRate.toFixed(1)}%）和 ${Number(sgQuality.price_outliers).toLocaleString()} 条异常值。异常值保留记录并标记，不直接删除。评论按 city_key + review_id 去重，香港删除 ${Number(hkReview.duplicate_review_id_rows).toLocaleString()} 条重复评论，新加坡删除 ${Number(sgReview.duplicate_review_id_rows).toLocaleString()} 条。`));
 children.push(h('2.3.2  数据集成', 3));
 children.push(body('以 city_key + listing_id 建立跨城市唯一房源键，以 city_key + host_id 建立房东键。日历和评论通过 listing_key 关联房源维度，两地未匹配记录均为 0。大事实表使用 Parquet，维度和汇总表使用 SQLite。'));
 children.push(h('2.3.3  数据选取', 3));
@@ -278,7 +284,7 @@ children.push(h('2.3.4  数据转换', 3));
   '从 bathrooms_text 解析卫浴数量、共享或独立属性。',
   '根据房东房源数量划分单房源、小型多房源和专业多房源房东。',
   '为 Google Trends 每条独立序列生成 z-score、相对首月指数和月度变化率。',
-  'occupancy_estimate_valid 仅保留 [0,1] 范围内的估计值，非法值不参与该指标分析。'
+  'estimated_occupancy_l365d 按估计入住晚数处理，仅保留 0–365 晚；occupancy_estimate_rate = 晚数 / 365。'
 ].forEach(x => children.push(bullet(x)));
 children.push(h('2.4  集成后的数据统计分析—Python', 2));
 children.push(body(`香港房源数量为 ${Number(hk.listing_count).toLocaleString()} 套，约为新加坡 ${Number(sg.listing_count).toLocaleString()} 套的 ${(hk.listing_count/sg.listing_count).toFixed(2)} 倍。香港和新加坡独立房间占比分别为 ${(hk.private_room_share*100).toFixed(1)}% 和 ${(sg.private_room_share*100).toFixed(1)}%，两城均以房间型产品为主。`));
@@ -434,9 +440,9 @@ const doc = new Document({
     },
     paragraphStyles: [
       { id: 'Normal', name: 'Normal', run: { font: BODY_FONT, size: 21 }, paragraph: { spacing: { line: 360, after: 80 } } },
-      { id: 'Heading1', name: 'Heading 1', next: 'Normal', run: { font: HEAD_FONT, size: 32, bold: true, color: NAVY }, paragraph: { outlineLevel: 0, keepNext: true, spacing: { before: 360, after: 240 } } },
-      { id: 'Heading2', name: 'Heading 2', next: 'Normal', run: { font: HEAD_FONT, size: 28, bold: true, color: NAVY }, paragraph: { outlineLevel: 1, keepNext: true, spacing: { before: 240, after: 140 } } },
-      { id: 'Heading3', name: 'Heading 3', next: 'Normal', run: { font: HEAD_FONT, size: 24, bold: true, color: NAVY }, paragraph: { outlineLevel: 2, keepNext: true, spacing: { before: 180, after: 100 } } },
+      { id: 'Heading1', name: 'Heading 1', next: 'Normal', run: { font: BODY_FONT, size: 44, bold: true, color: '000000' }, paragraph: { alignment: AlignmentType.JUSTIFIED, outlineLevel: 0, keepNext: true, keepLines: true, spacing: { before: 340, after: 330, line: 578, lineRule: 'auto' } } },
+      { id: 'Heading2', name: 'Heading 2', next: 'Normal', run: { font: HEAD_FONT, size: 32, bold: true, color: '000000' }, paragraph: { alignment: AlignmentType.JUSTIFIED, outlineLevel: 1, keepNext: true, keepLines: true, spacing: { before: 260, after: 260, line: 416, lineRule: 'auto' } } },
+      { id: 'Heading3', name: 'Heading 3', next: 'Normal', run: { font: BODY_FONT, size: 32, bold: true, color: '000000' }, paragraph: { alignment: AlignmentType.JUSTIFIED, outlineLevel: 2, keepNext: true, keepLines: true, spacing: { before: 260, after: 260, line: 416, lineRule: 'auto' } } },
     ],
   },
   numbering: {
@@ -479,6 +485,11 @@ const doc = new Document({
   ],
 });
 
+if (fs.existsSync(OUT) && process.env.REPORT_FORCE !== '1') {
+  console.log(`Report already exists; preserving manual edits: ${OUT}`);
+  console.log('Set REPORT_FORCE=1 to overwrite.');
+  process.exit(0);
+}
 Packer.toBuffer(doc).then(buf => {
   fs.mkdirSync(REPORT_DIR, { recursive: true });
   fs.writeFileSync(OUT, buf);

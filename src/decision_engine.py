@@ -190,7 +190,7 @@ def recommend(
         "warnings": warnings,
         "counterfactuals": counterfactuals,
         "currency": "HKD" if city_key == "hong-kong" else "SGD",
-        "caveat": "建议价格是同类挂牌价格的统计参考，不是成交价预测，也不构成投资建议。",
+        "caveat": "建议价格是基于同类房源分位数的演示性启发式参考；容量调整指数与经营定位系数未经本地订单数据校准，不是统计定价结论、成交价预测或投资建议。",
     }
 
 

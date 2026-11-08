@@ -66,3 +66,11 @@ def test_google_trends_is_not_fabricated():
 def test_quality_report_exists():
     assert (TABLES / "warehouse_quality.json").exists()
     assert (PROJECT_ROOT / "docs" / "数据质量报告.md").exists()
+
+def test_occupancy_is_nights_not_rate():
+    fact = pd.read_parquet(PROCESSED / "fact_listing_snapshot.parquet")
+    raw = fact["occupancy_estimate_raw"].dropna()
+    assert raw.between(0, 365).all()
+    valid = fact.dropna(subset=["occupancy_estimate_raw", "occupancy_estimate_valid", "occupancy_estimate_rate"])
+    assert (valid["occupancy_estimate_valid"] == valid["occupancy_estimate_raw"]).all()
+    assert (valid["occupancy_estimate_rate"] - valid["occupancy_estimate_raw"] / 365).abs().max() < 1e-12
