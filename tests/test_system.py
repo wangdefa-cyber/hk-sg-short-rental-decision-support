@@ -1,9 +1,11 @@
 import json
 
 import pandas as pd
+import plotly.graph_objects as go
 from streamlit.testing.v1 import AppTest
 
 from src.config import PROJECT_ROOT
+from src.ui import add_neighbourhood_boundaries
 
 ROOT = PROJECT_ROOT
 
@@ -132,3 +134,12 @@ def test_demand_keyword_filter_updates_metrics_and_charts():
     assert _metric_value(at, "真实序列") == "2"
     assert len(at.get("plotly_chart")) == all_charts
     assert all_series == "7"
+
+
+def test_geo_maps_use_local_neighbourhood_boundaries():
+    for city_key in ("hong-kong", "singapore"):
+        figure = go.Figure()
+        add_neighbourhood_boundaries(figure, city_key)
+
+        assert any(trace.type == "scattergeo" for trace in figure.data)
+        assert figure.layout.geo.fitbounds == "locations"

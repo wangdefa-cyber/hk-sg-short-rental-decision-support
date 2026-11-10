@@ -7,6 +7,7 @@ import plotly.express as px
 import streamlit as st
 
 from src.ui import (
+    add_neighbourhood_boundaries,
     city_selector,
     listing_data,
     metric_card,
@@ -176,31 +177,31 @@ def render() -> None:
         st.info("当前筛选结果没有可用于地图展示的有效坐标。")
     else:
         try:
-            fig = px.scatter_map(
+            fig = px.scatter_geo(
                 map_data,
                 lat="latitude",
                 lon="longitude",
                 color="room_type_cn",
                 hover_name="neighbourhood",
                 hover_data={"price_clean": ":,.2f", "review_scores_rating": ":.2f", "latitude": False, "longitude": False},
-                zoom=10,
-                height=560,
+                fitbounds="locations",
                 title="房源空间分布",
                 color_discrete_sequence=["#59c3c3", "#f39c6b", "#8e7dbe", "#f7d060"],
-                map_style="open-street-map",
             )
+            add_neighbourhood_boundaries(fig, city_key)
             fig.update_layout(margin={"r": 0, "t": 45, "l": 0, "b": 0})
             render_chart(
                 fig,
                 key="supply_listing_map",
-                alt="当前筛选房源在香港或新加坡地图上的空间分布",
+                alt="当前筛选房源在香港或新加坡社区边界内的空间分布",
                 height=560,
                 scroll_zoom=True,
             )
+            st.caption("底图使用项目本地社区边界，不依赖外部地图瓦片服务。")
             if sampling_note:
                 st.caption(sampling_note)
-        except Exception as exc:  # noqa: BLE001  # map style/network fallback
-            st.warning(f"地图组件暂不可用，改用经纬度散点图。原因：{exc}")
+        except Exception as exc:  # noqa: BLE001  # geo rendering fallback
+            st.warning(f"地理图暂不可用，改用经纬度散点图。原因：{exc}")
             fig = px.scatter(
                 map_data,
                 x="longitude",

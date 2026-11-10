@@ -6,6 +6,7 @@ import json
 from typing import Any
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 
 from src.config import PROJECT_ROOT, TABLES_DIR
@@ -109,6 +110,56 @@ def load_csv(path: str) -> pd.DataFrame:
 @st.cache_data(show_spinner=False)
 def load_json(path: str) -> Any:
     return json.loads((PROJECT_ROOT / path).read_text(encoding="utf-8"))
+
+
+def add_neighbourhood_boundaries(figure: Any, city_key: str) -> Any:
+    """Add local neighbourhood outlines to a Plotly geo figure."""
+    geojson = load_json("data/processed/neighbourhoods_clean.geojson")
+    longitudes: list[float | None] = []
+    latitudes: list[float | None] = []
+    for feature in geojson.get("features", []):
+        if feature.get("properties", {}).get("city_key") != city_key:
+            continue
+        geometry = feature.get("geometry", {})
+        geometry_type = geometry.get("type")
+        coordinates = geometry.get("coordinates", [])
+        polygons = coordinates if geometry_type == "MultiPolygon" else [coordinates]
+        for polygon in polygons:
+            for ring in polygon:
+                longitudes.extend(point[0] for point in ring)
+                latitudes.extend(point[1] for point in ring)
+                longitudes.append(None)
+                latitudes.append(None)
+
+    figure.add_trace(
+        go.Scattergeo(
+            lon=longitudes,
+            lat=latitudes,
+            mode="lines",
+            line={"color": "#4b6f89", "width": 1},
+            hoverinfo="skip",
+            showlegend=False,
+            name="社区边界",
+        )
+    )
+    figure.update_geos(
+        scope="asia",
+        projection_type="mercator",
+        fitbounds="locations",
+        visible=True,
+        showcountries=True,
+        countrycolor="#29445f",
+        showland=True,
+        landcolor="#10233b",
+        showocean=True,
+        oceancolor="#0d1726",
+        showlakes=True,
+        lakecolor="#0d1726",
+        coastlinecolor="#29445f",
+        bgcolor="rgba(0,0,0,0)",
+        showframe=False,
+    )
+    return figure
 
 
 @st.cache_data(show_spinner=False)

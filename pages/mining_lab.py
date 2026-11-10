@@ -8,6 +8,7 @@ import streamlit as st
 from src.ui import (
     CHART_COLORS,
     CITY_NAMES,
+    add_neighbourhood_boundaries,
     city_selector,
     cluster_profiles,
     feature_importance,
@@ -115,28 +116,28 @@ def render() -> None:
             points = points.sample(4000, random_state=42)
             st.caption("地图抽样 4,000 条进行展示；聚类统计使用全部有效坐标。")
         try:
-            fig = px.scatter_map(
+            fig = px.scatter_geo(
                 points,
                 lat="latitude",
                 lon="longitude",
                 color="spatial_cluster_label",
                 hover_name="neighbourhood",
                 hover_data={"price_clean": ":,.2f", "latitude": False, "longitude": False},
-                zoom=10,
-                height=540,
+                fitbounds="locations",
                 title=f"{city_name}DBSCAN 空间聚类",
-                map_style="open-street-map",
             )
+            add_neighbourhood_boundaries(fig, city_key)
             fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", margin={"r": 0, "t": 45, "l": 0, "b": 0})
             render_chart(
                 fig,
                 key="mining_spatial_map",
-                alt=f"{city_name}房源的 DBSCAN 空间聚类地图",
+                alt=f"{city_name}房源在社区边界内的 DBSCAN 空间聚类图",
                 height=540,
                 scroll_zoom=True,
             )
+            st.caption("底图使用项目本地社区边界，不依赖外部地图瓦片服务。")
         except Exception as exc:  # noqa: BLE001
-            st.warning(f"地图组件暂不可用，改用经纬度散点图：{exc}")
+            st.warning(f"地理图暂不可用，改用经纬度散点图：{exc}")
             fallback = px.scatter(
                 points,
                 x="longitude",
