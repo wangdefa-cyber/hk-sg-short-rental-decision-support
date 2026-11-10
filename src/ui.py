@@ -6,85 +6,93 @@ import json
 from typing import Any
 
 import pandas as pd
-import plotly.io as pio
 import streamlit as st
 
 from src.config import PROJECT_ROOT, TABLES_DIR
 
 CITY_NAMES = {"hong-kong": "香港", "singapore": "新加坡"}
-_dark_template = pio.templates["plotly_dark"]
-_dark_template.layout.font.color = "#e7f0f7"
-_dark_template.layout.title.font.color = "#e7f0f7"
-_dark_template.layout.legend.font.color = "#e7f0f7"
-_dark_template.layout.xaxis.title.font.color = "#e7f0f7"
-_dark_template.layout.yaxis.title.font.color = "#e7f0f7"
-_dark_template.layout.xaxis.tickfont.color = "#b9cfe0"
-_dark_template.layout.yaxis.tickfont.color = "#b9cfe0"
-pio.templates["plotly_dark"] = _dark_template
 
 
-def inject_css() -> None:
-    st.markdown(
-        """
-        <style>
-        :root {
-            --bg: #0d1726;
-            --panel: #142439;
-            --panel-2: #192d45;
-            --border: #29445f;
-            --text: #e7f0f7;
-            --muted: #8fa9bd;
-            --accent: #59c3c3;
-            --warm: #f39c6b;
-        }
-        .stApp { background: linear-gradient(180deg, #0b1421 0%, #0d1726 100%); color: var(--text); }
-        [data-testid="stHeader"] { background: rgba(0,0,0,0); }
-        [data-testid="stSidebar"] { background: #0b1421; border-right: 1px solid var(--border); }
-        h1, h2, h3 { color: var(--text) !important; letter-spacing: .3px; }
-        p, label, span, div { color: var(--text); }
-        .hero {
-            padding: 22px 26px;
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            background: linear-gradient(120deg, #10233b, #142439 55%, #1e3d53);
-            margin-bottom: 18px;
-        }
-        .hero h1 { margin: 0 0 8px; font-size: 28px; }
-        .hero p { color: var(--muted); margin: 0; }
-        .metric-card {
-            background: var(--panel);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 16px 18px;
-            min-height: 112px;
-            box-shadow: 0 8px 20px rgba(0,0,0,.15);
-        }
-        .metric-label { color: var(--muted); font-size: 13px; margin-bottom: 8px; }
-        .metric-value { color: var(--text); font-size: 28px; font-weight: 700; }
-        .metric-note { color: var(--muted); font-size: 12px; margin-top: 5px; }
-        .section-note { color: var(--muted); font-size: 13px; }
-        .source-note { color: #6f8ba1; font-size: 12px; }
-        div[data-testid="stDataFrame"] { border: 1px solid var(--border); border-radius: 10px; }
-        .stButton>button, .stDownloadButton>button {
-            background: #1d4c63; color: #e7f0f7; border: 1px solid #39748c; border-radius: 8px;
-        }
-        .stButton>button:hover, .stDownloadButton>button:hover { background: #28677f; border-color: #59c3c3; }
-        #MainMenu, footer, [data-testid="stToolbar"], [data-testid="stDecoration"] { visibility: hidden; height: 0; }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+CHART_COLORS = ["#59c3c3", "#f39c6b", "#8e7dbe", "#f7d060", "#78a6c8", "#e8c1a0"]
+
+PLOTLY_CONFIG = {
+    "displaylogo": False,
+    "displayModeBar": "hover",
+    "responsive": True,
+    "doubleClick": "reset",
+    "modeBarButtonsToRemove": ["select2d", "lasso2d"],
+}
 
 
 def page_header(title: str, subtitle: str) -> None:
-    st.markdown(f'<div class="hero"><h1>{title}</h1><p>{subtitle}</p></div>', unsafe_allow_html=True)
+    st.title(title)
+    st.caption(subtitle)
 
 
 def metric_card(label: str, value: str, note: str = "") -> None:
-    st.markdown(
-        f'<div class="metric-card"><div class="metric-label">{label}</div>'
-        f'<div class="metric-value">{value}</div><div class="metric-note">{note}</div></div>',
-        unsafe_allow_html=True,
+    with st.container(border=True):
+        st.metric(label, value)
+        if note:
+            st.caption(note)
+
+
+def city_selector(key: str, label: str = "城市") -> str | None:
+    return st.segmented_control(
+        label,
+        options=list(CITY_NAMES),
+        format_func=lambda value: CITY_NAMES.get(value, value),
+        default="hong-kong",
+        selection_mode="single",
+        width="stretch",
+        key=key,
+    )
+
+
+def render_chart(
+    figure: Any,
+    *,
+    key: str,
+    alt: str,
+    height: int | None = None,
+    scroll_zoom: bool = False,
+):
+    layout = {
+        "paper_bgcolor": "rgba(0,0,0,0)",
+        "plot_bgcolor": "rgba(0,0,0,0)",
+        "colorway": CHART_COLORS,
+        "font": {"color": "#e7f0f7"},
+        "title_font": {"color": "#e7f0f7"},
+        "legend": {"bgcolor": "rgba(0,0,0,0)", "font": {"color": "#e7f0f7"}},
+        "hoverlabel": {
+            "bgcolor": "#142439",
+            "bordercolor": "#29445f",
+            "font": {"color": "#e7f0f7"},
+        },
+        "modebar": {
+            "bgcolor": "rgba(0,0,0,0)",
+            "color": "#8fa9bd",
+            "activecolor": "#59c3c3",
+        },
+    }
+    if height is not None:
+        layout["height"] = height
+    figure.update_layout(**layout)
+    config = {
+        **PLOTLY_CONFIG,
+        "scrollZoom": scroll_zoom,
+        "toImageButtonOptions": {
+            "format": "png",
+            "filename": key,
+            "scale": 2,
+        },
+    }
+    return st.plotly_chart(
+        figure,
+        width="stretch",
+        theme="streamlit",
+        config=config,
+        key=key,
+        alt=alt,
     )
 
 
@@ -211,4 +219,4 @@ def format_number(value: float | None, decimals: int = 0) -> str:
 
 
 def show_source(text: str) -> None:
-    st.markdown(f'<div class="source-note">来源：{text}</div>', unsafe_allow_html=True)
+    st.caption(f"来源：{text}")

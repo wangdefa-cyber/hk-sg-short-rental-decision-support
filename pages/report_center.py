@@ -69,48 +69,65 @@ def _build_summary() -> str:
     return "\n".join(lines)
 
 
+
+
+def _render_download_group(files) -> None:
+    with st.container(border=True):
+        for label, path, mime in files:
+            left, right = st.columns([3, 1])
+            with left:
+                st.markdown(f"**{label}**")
+                st.caption(path.relative_to(PROJECT_ROOT).as_posix())
+            with right:
+                if path.exists():
+                    st.download_button(
+                        "下载",
+                        data=path.read_bytes(),
+                        file_name=path.name,
+                        mime=mime,
+                        icon=":material/download:",
+                        width="stretch",
+                        key=f"download_{path.name}",
+                    )
+                else:
+                    st.caption("尚未生成")
+
+
 def render() -> None:
     page_header("研究报告中心", "下载真实分析结果、图表、数据和报告支撑材料")
     summary = _build_summary()
     report_path = PROJECT_ROOT / "outputs" / "reports" / "分析摘要.md"
     report_path.parent.mkdir(parents=True, exist_ok=True)
     report_path.write_text(summary, encoding="utf-8")
-    st.markdown(summary)
 
-    st.divider()
-    st.markdown("### 下载交付物")
-    files = [
+    with st.expander("查看分析摘要", expanded=False):
+        st.markdown(summary)
+
+    report_files = [
         ("Excel 多维分析", PROJECT_ROOT / "outputs" / "excel" / "香港新加坡短租多维分析.xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
         ("ECharts 交互看板", PROJECT_ROOT / "outputs" / "charts" / "echarts" / "dashboard.html", "text/html"),
-        ("Gephi 网络 GEXF", PROJECT_ROOT / "outputs" / "gephi" / "host_listing_neighbourhood.gexf", "application/xml"),
-        ("Gephi 节点 CSV", PROJECT_ROOT / "outputs" / "gephi" / "nodes.csv", "text/csv"),
-        ("Gephi 边 CSV", PROJECT_ROOT / "outputs" / "gephi" / "edges.csv", "text/csv"),
         ("课程中期报告 DOCX", PROJECT_ROOT / "report" / "数据挖掘课程中期报告_香港新加坡短租分析_最终版.docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
         ("课程中期报告 PDF", PROJECT_ROOT / "report" / "数据挖掘课程中期报告_香港新加坡短租分析_最终版.pdf", "application/pdf"),
         ("分析摘要", report_path, "text/markdown"),
+    ]
+    data_files = [
+        ("Gephi 网络 GEXF", PROJECT_ROOT / "outputs" / "gephi" / "host_listing_neighbourhood.gexf", "application/xml"),
+        ("Gephi 节点 CSV", PROJECT_ROOT / "outputs" / "gephi" / "nodes.csv", "text/csv"),
+        ("Gephi 边 CSV", PROJECT_ROOT / "outputs" / "gephi" / "edges.csv", "text/csv"),
+        ("Power BI 模型说明", PROJECT_ROOT / "outputs" / "powerbi" / "PowerBI模型说明.md", "text/markdown"),
         ("数据字典", PROJECT_ROOT / "docs" / "数据字典.md", "text/markdown"),
         ("数据处理说明", PROJECT_ROOT / "docs" / "数据处理说明.md", "text/markdown"),
         ("实施计划", PROJECT_ROOT / "docs" / "项目实施计划.md", "text/markdown"),
         ("数据审查报告", PROJECT_ROOT / "docs" / "数据审查报告.md", "text/markdown"),
-        ("Power BI 模型说明", PROJECT_ROOT / "outputs" / "powerbi" / "PowerBI模型说明.md", "text/markdown"),
     ]
-    for label, path, mime in files:
-        col1, col2 = st.columns([2, 1])
-        with col1:
-            st.markdown(f"**{label}**  \n`{path.relative_to(PROJECT_ROOT)}`")
-        with col2:
-            if path.exists():
-                st.download_button(
-                    "下载",
-                    data=path.read_bytes(),
-                    file_name=path.name,
-                    mime=mime,
-                    key=f"download_{path.name}",
-                )
-            else:
-                st.caption("尚未生成")
 
-    st.markdown("### 结果表下载")
+    report_tab, data_tab = st.tabs(["报告与展示", "数据与文档"])
+    with report_tab:
+        _render_download_group(report_files)
+    with data_tab:
+        _render_download_group(data_files)
+
+    st.subheader("结果表下载")
     table_files = sorted((PROJECT_ROOT / "outputs" / "tables").glob("*.csv"))
     selected = st.selectbox("选择结果表", [path.name for path in table_files])
     selected_path = PROJECT_ROOT / "outputs" / "tables" / selected
@@ -119,9 +136,16 @@ def render() -> None:
         data=selected_path.read_bytes(),
         file_name=selected_path.name,
         mime="text/csv",
+        icon=":material/download:",
+        width="stretch",
         key="download_selected_table",
     )
-    st.dataframe(pd.read_csv(selected_path).head(200), width="stretch", hide_index=True)
+    st.dataframe(
+        pd.read_csv(selected_path).head(200),
+        width="stretch",
+        hide_index=True,
+        height=460,
+    )
     show_source("下载文件均来自本次分析结果，数据口径见表与图注。")
 
 

@@ -28,8 +28,8 @@ def classify(rel: Path) -> tuple[str, str, str, str, str]:
         return "旧版本报告", "否", "建议归档", "低", "历史版本，不进入当前交付"
     if low.startswith("outputs/reports/") and any(x in low for x in ("preview", "template_cover", "template_for_styles", "final_cover")) or low.endswith(".log"):
         return "开发预览/日志", "否", "可安全删除", "低", "仅用于开发检查"
-    if rel.name in {"app.py", ".gitignore", "pytest.ini", "data_manifest.json", "package.json", "package-lock.json", "config.yaml", "requirements.txt", "requirements-dev.txt", "requirements-lock.txt", "run_pipeline.ps1"} or low.startswith(".streamlit/"):
-        return "配置/入口", "是", "必须保留", "高", "应用入口、依赖或运行配置"
+    if rel.name in {"app.py", "启动系统.bat", ".gitignore", "pytest.ini", "data_manifest.json", "package.json", "package-lock.json", "config.yaml", "requirements.txt", "requirements-dev.txt", "requirements-lock.txt", "run_pipeline.ps1"} or low.startswith(".streamlit/"):
+        return "配置/入口", "是", "必须保留", "高", "应用入口、双击启动脚本、依赖或运行配置"
     if low.startswith("scripts/"):
         return "项目脚本", "是", "必须保留", "高", "项目生成和检查脚本"
     if rel.name == "report_generator.py":

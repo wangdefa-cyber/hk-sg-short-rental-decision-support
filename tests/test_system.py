@@ -1,5 +1,4 @@
 import json
-import re
 
 import pandas as pd
 from streamlit.testing.v1 import AppTest
@@ -48,6 +47,7 @@ def test_google_trends_is_explicitly_pending_or_present():
         trends = pd.read_parquet(ROOT / "data" / "processed" / "fact_google_trends.parquet")
         assert len(trends) == 0
 
+
 def test_trends_uploaded_and_parsed_are_counted_together():
     status = json.loads((ROOT / "outputs" / "tables" / "google_trends_status.json").read_text(encoding="utf-8"))
     expected = sum(item.get("status") in {"present", "parsed"} for item in status)
@@ -71,9 +71,9 @@ def test_decision_result_cleared_when_inputs_change():
     assert len(at.exception) == 0
     assert len(at.metric) == 4
 
-    at.selectbox(key="decision_city").set_value("新加坡").run()
+    at.segmented_control(key="decision_city").set_value("singapore").run()
     assert len(at.exception) == 0
-    assert at.selectbox(key="decision_city").value == "新加坡"
+    assert at.segmented_control(key="decision_city").value == "singapore"
     assert len(at.metric) == 0
     assert any("点击" in item.value for item in at.info)
 
@@ -82,42 +82,53 @@ def test_supply_empty_filter_shows_guidance():
     at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=120).run()
     at.switch_page("pages/supply_analysis.py").run()
     next(item for item in at.multiselect if item.label == "社区").set_value(["Eastern"])
-    next(item for item in at.multiselect if item.label == "房型").set_value(["Hotel room"])
+    next(item for item in at.pills if item.label == "房型").set_value(["Hotel room"])
     at.run()
     assert len(at.exception) == 0
     assert any("没有房源" in item.value for item in at.warning)
     assert len(at.get("plotly_chart")) == 0
 
 
-def _metric_value_from_markdown(at: AppTest, label: str) -> str:
-    card = next(item.value for item in at.markdown if label in item.value and "metric-value" in item.value)
-    match = re.search(r'metric-value">([^<]+)', card)
-    assert match
-    return match.group(1)
+def _metric_value(at: AppTest, label: str) -> str:
+    return next(item.value for item in at.metric if item.label == label)
 
 
 def test_supply_filters_affect_listing_count():
     at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=120).run()
     at.switch_page("pages/supply_analysis.py").run()
-    initial = _metric_value_from_markdown(at, "筛选后房源")
+    initial = _metric_value(at, "筛选后房源")
 
-    at.selectbox(key="supply_city").set_value("singapore").run()
-    at.multiselect[0].set_value(["Ang Mo Kio"])
-    at.multiselect[1].set_value(["Entire home/apt"])
+    at.segmented_control(key="supply_city").set_value("singapore").run()
+    next(item for item in at.multiselect if item.label == "社区").set_value(["Ang Mo Kio"])
+    next(item for item in at.pills if item.label == "房型").set_value(["Entire home/apt"])
     at.run()
-    filtered = _metric_value_from_markdown(at, "筛选后房源")
+    filtered = _metric_value(at, "筛选后房源")
 
     assert len(at.exception) == 0
-    assert at.selectbox(key="supply_city").value == "singapore"
+    assert at.segmented_control(key="supply_city").value == "singapore"
     assert filtered != initial
 
 
 def test_matching_city_switch_and_empty_filter():
     at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=120).run()
     at.switch_page("pages/matching_analysis.py").run()
-    at.selectbox(key="match_city").set_value("singapore").run()
-    at.multiselect[0].set_value([]).run()
+    at.segmented_control(key="match_city").set_value("singapore").run()
+    at.pills(key="match_strategies").set_value([]).run()
 
     assert len(at.exception) == 0
-    assert at.selectbox(key="match_city").value == "singapore"
-    assert any("没有社区" in item.value for item in at.warning)
+    assert at.segmented_control(key="match_city").value == "singapore"
+    assert any("至少选择" in item.value for item in at.warning)
+
+
+def test_demand_keyword_filter_updates_metrics_and_charts():
+    at = AppTest.from_file(str(ROOT / "app.py"), default_timeout=120).run()
+    at.switch_page("pages/demand_analysis_page.py").run()
+    all_series = _metric_value(at, "真实序列")
+    all_charts = len(at.get("plotly_chart"))
+
+    at.pills(key="demand_keyword_groups").set_value(["tourism"]).run()
+
+    assert len(at.exception) == 0
+    assert _metric_value(at, "真实序列") == "2"
+    assert len(at.get("plotly_chart")) == all_charts
+    assert all_series == "7"

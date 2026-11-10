@@ -12,10 +12,17 @@ from src.ui import (
     metric_card,
     monthly_review_data,
     page_header,
+    render_chart,
     room_data,
     show_source,
 )
 
+ROOM_COLORS = {
+    "整套房源": "#59c3c3",
+    "独立房间": "#f39c6b",
+    "酒店房间": "#8e7dbe",
+    "合住房间": "#f7d060",
+}
 
 def render() -> None:
     page_header("项目总览", "香港与新加坡短租市场的供给结构、价格、口碑和预测分析")
@@ -40,6 +47,7 @@ def render() -> None:
         metric_card("平均评分", f"{avg_rating:.2f} / 5", "仅对非缺失评分求均值")
 
     st.divider()
+    st.caption("图表支持悬停查看、缩放、框选、重置，并可从工具栏导出 PNG。")
     c1, c2 = st.columns([1, 1])
     with c1:
         fig = px.bar(
@@ -52,20 +60,31 @@ def render() -> None:
             title="香港与新加坡房源总量",
             template="plotly_dark",
         )
-        fig.update_layout(showlegend=False, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=380)
-        st.plotly_chart(fig, width="stretch")
+        fig.update_layout(showlegend=False, height=380, xaxis_title="城市", yaxis_title="房源数")
+        render_chart(
+            fig,
+            key="dashboard_listing_count",
+            alt="香港与新加坡房源总量对比柱状图",
+            height=380,
+        )
     with c2:
         fig = px.bar(
             room,
             x="city_name",
             y="room_type_share",
             color="room_type_cn",
+            color_discrete_map=ROOM_COLORS,
             barmode="stack",
             title="房型结构占比",
             template="plotly_dark",
         )
-        fig.update_layout(yaxis_tickformat=".0%", paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=380, legend_title="房型")
-        st.plotly_chart(fig, width="stretch")
+        fig.update_layout(yaxis_tickformat=".0%", height=380, xaxis_title="城市", yaxis_title="房型占比", legend_title="房型")
+        render_chart(
+            fig,
+            key="dashboard_room_mix",
+            alt="香港与新加坡整套房源、独立房间等房型结构占比",
+            height=380,
+        )
 
     c3, c4 = st.columns([1.3, 1])
     with c3:
@@ -77,8 +96,13 @@ def render() -> None:
             title="月度评论活跃度",
             template="plotly_dark",
         )
-        fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", height=390, xaxis_title="年月", yaxis_title="评论数")
-        st.plotly_chart(fig, width="stretch")
+        fig.update_layout(height=390, xaxis_title="年月", yaxis_title="评论数", legend_title="城市")
+        render_chart(
+            fig,
+            key="dashboard_review_activity",
+            alt="香港与新加坡月度评论数量变化折线图",
+            height=390,
+        )
     with c4:
         display = city[["city_name", "listing_count", "host_count", "entire_home_share", "private_room_share", "price_median_local", "review_score_mean", "professional_host_share"]].copy()
         display = display.rename(
@@ -97,20 +121,21 @@ def render() -> None:
             display[column] = (display[column] * 100).round(2).astype(str) + "%"
         display["价格中位数（本币）"] = display["价格中位数（本币）"].round(2)
         display["平均评分"] = display["平均评分"].round(3)
-        st.markdown("#### 城市核心对比")
-        st.dataframe(display, width="stretch", hide_index=True)
+        st.subheader("城市核心对比")
+        st.dataframe(display, width="stretch", hide_index=True, height=390)
 
     hk = city[city["city_key"] == "hong-kong"].iloc[0]
     sg = city[city["city_key"] == "singapore"].iloc[0]
-    st.markdown("#### 关键发现")
-    st.markdown(
-        f"- 香港房源总量为新加坡的 **{hk['listing_count'] / sg['listing_count']:.2f} 倍**；"
-        f"两城均以独立房间为主，香港独立房间占比 **{hk['private_room_share']:.1%}**，新加坡 **{sg['private_room_share']:.1%}**。"
-    )
-    st.markdown(
-        f"- 价格中位数分别为 **{hk['price_median_local']:.2f} HKD/晚** 与 **{sg['price_median_local']:.2f} SGD/晚**；"
-        "两者币种不同，不能直接比较绝对高低。"
-    )
+    with st.container(border=True):
+        st.subheader("关键发现")
+        st.markdown(
+            f"- 香港房源总量为新加坡的 **{hk['listing_count'] / sg['listing_count']:.2f} 倍**；"
+            f"两城均以独立房间为主，香港独立房间占比 **{hk['private_room_share']:.1%}**，新加坡 **{sg['private_room_share']:.1%}**。"
+        )
+        st.markdown(
+            f"- 价格中位数分别为 **{hk['price_median_local']:.2f} HKD/晚** 与 **{sg['price_median_local']:.2f} SGD/晚**；"
+            "两者币种不同，不能直接比较绝对高低。"
+        )
     show_source("Inside Airbnb 2026-09 快照；评论量和价格均来自真实清洗数据。")
 
 

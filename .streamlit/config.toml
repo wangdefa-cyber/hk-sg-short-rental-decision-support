@@ -4,10 +4,18 @@ primaryColor = "#59c3c3"
 backgroundColor = "#0d1726"
 secondaryBackgroundColor = "#142439"
 textColor = "#e7f0f7"
+borderColor = "#29445f"
 font = "sans serif"
+baseRadius = "0.5rem"
+baseFontSize = 15
+showWidgetBorder = true
+showSidebarBorder = true
 
 [server]
 headless = true
 
 [browser]
 gatherUsageStats = false
+
+[client]
+toolbarMode = "minimal"
