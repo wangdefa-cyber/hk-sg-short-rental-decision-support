@@ -8,25 +8,9 @@ import pandas as pd
 import streamlit as st
 
 from src import data_audit, data_integrator, demand_analysis
-from src.config import PROJECT_ROOT, snapshot_dir
+from src.config import GOOGLE_TRENDS_SPECS, PROJECT_ROOT, RAW_FILES, snapshot_dir
+from src.data_uploads import save_uploads, validate_uploads
 from src.ui import city_selector, load_json, page_header
-
-
-def _save_uploads(uploaded, target_dir: Path, allow_overwrite: bool) -> list[str]:
-    target_dir.mkdir(parents=True, exist_ok=True)
-    saved = []
-    for upload in uploaded:
-        target = target_dir / upload.name
-        if target.exists() and not allow_overwrite:
-            stem = target.stem
-            suffix = target.suffix
-            index = 1
-            while target.exists():
-                target = target_dir / f"{stem}_uploaded{index}{suffix}"
-                index += 1
-        target.write_bytes(upload.getbuffer())
-        saved.append(str(target))
-    return saved
 
 
 def render() -> None:
@@ -62,50 +46,70 @@ def render() -> None:
             st.warning("请选择一个城市。")
         else:
             allow_overwrite = st.checkbox("允许覆盖同名原始文件", value=False)
+            st.caption("支持文件名：" + "、".join(f"`{name}`" for name in RAW_FILES))
             uploaded = st.file_uploader(
                 "选择 CSV、CSV.GZ 或 GEOJSON 文件",
                 type=["csv", "gz", "geojson"],
                 accept_multiple_files=True,
                 key="raw_uploader",
             )
-            if uploaded and st.button(
+            valid_uploads, invalid_uploads = validate_uploads(uploaded or [], RAW_FILES)
+            if invalid_uploads:
+                st.error("无法识别的文件名：" + "、".join(invalid_uploads) + "。请使用上方列出的固定文件名。")
+            if valid_uploads and st.button(
                 "保存原始数据",
                 icon=":material/upload_file:",
                 width="stretch",
                 key="save_raw",
             ):
-                saved = _save_uploads(uploaded, snapshot_dir(selected_city), allow_overwrite)
-                st.success(f"已保存 {len(saved)} 个文件。")
-                st.code("\n".join(saved))
+                saved, skipped = save_uploads(
+                    valid_uploads,
+                    snapshot_dir(selected_city),
+                    allowed_names=RAW_FILES,
+                    allow_overwrite=allow_overwrite,
+                )
+                if saved:
+                    st.success(f"已保存 {len(saved)} 个文件。")
+                    st.code("\n".join(saved))
+                if skipped:
+                    st.warning("以下同名文件已存在，未覆盖：" + "、".join(Path(path).name for path in skipped))
                 st.cache_data.clear()
 
     with upload_right, st.container(border=True):
         st.subheader("上传 Google Trends")
-        st.caption("支持 Google Trends 导出的单关键词 CSV 及相关搜索词表。")
+        st.caption("支持文件名：" + "、".join(f"`{name}`" for name in GOOGLE_TRENDS_SPECS))
+        trend_overwrite = st.checkbox("允许覆盖同名趋势文件", value=False, key="trend_overwrite")
         trend_uploaded = st.file_uploader(
             "选择真实导出的 Google Trends CSV",
             type=["csv"],
             accept_multiple_files=True,
             key="trends_uploader",
         )
-        if trend_uploaded and st.button(
+        valid_trends, invalid_trends = validate_uploads(trend_uploaded or [], GOOGLE_TRENDS_SPECS)
+        if invalid_trends:
+            st.error("无法识别的文件名：" + "、".join(invalid_trends) + "。请使用上方列出的固定文件名。")
+        if valid_trends and st.button(
             "保存趋势文件",
             icon=":material/upload_file:",
             width="stretch",
             key="save_trends",
         ):
-            saved = _save_uploads(
-                trend_uploaded,
+            saved, skipped = save_uploads(
+                valid_trends,
                 PROJECT_ROOT / "data" / "external" / "google_trends",
-                allow_overwrite=False,
+                allowed_names=GOOGLE_TRENDS_SPECS,
+                allow_overwrite=trend_overwrite,
             )
-            st.success(f"已保存 {len(saved)} 个趋势文件。")
-            st.code("\n".join(saved))
+            if saved:
+                st.success(f"已保存 {len(saved)} 个趋势文件。")
+                st.code("\n".join(saved))
+            if skipped:
+                st.warning("以下同名文件已存在，未覆盖：" + "、".join(Path(path).name for path in skipped))
             st.cache_data.clear()
 
     with st.container(border=True):
         st.subheader("数据处理与仓库重建")
-        st.caption("重建会覆盖分析仓库和结果表，但不会覆盖最终 Word 报告。")
+        st.caption("重建会重新生成 Parquet/SQLite 数据仓库并解析 Google Trends；K-Means、房价模型、供需匹配等下游结果需运行完整分析流水线更新。该操作不会覆盖最终 Word 报告。")
         c1, c2, c3 = st.columns(3)
         with c1:
             if st.button(
@@ -132,7 +136,7 @@ def render() -> None:
                         for name in ["hk_travel.csv", "sg_travel.csv"]
                     ):
                         demand_analysis.analyze()
-                st.success("数据仓库和 Google Trends 分析结果重建完成。")
+                st.success("数据仓库和 Google Trends 分析结果已重建；下游分析结果未自动重算。")
                 st.cache_data.clear()
         with c3:
             if st.button(
