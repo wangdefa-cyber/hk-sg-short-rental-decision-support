@@ -7,7 +7,7 @@ const {
   VerticalAlign, PageOrientation, SectionType
 } = require('docx');
 
-const ROOT = 'C:/Users/Auraro/Desktop/Data Mining';
+const ROOT = path.resolve(__dirname, '..');
 const REPORT_DIR = path.join(ROOT, 'report');
 const CHART = path.join(ROOT, 'outputs', 'charts');
 const TREND_CHART = path.join(CHART, 'trends');

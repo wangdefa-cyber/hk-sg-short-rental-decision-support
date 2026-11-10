@@ -1,11 +1,9 @@
-import json
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
-from src.decision_engine import available_options, recommend
 from src.config import PROJECT_ROOT
+from src.decision_engine import available_options, recommend
 
 TABLES = PROJECT_ROOT / "outputs" / "tables"
 

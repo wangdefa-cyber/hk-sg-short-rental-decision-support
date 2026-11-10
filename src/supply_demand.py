@@ -5,14 +5,15 @@ from __future__ import annotations
 import json
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
 
-from src.config import CHARTS_DIR, PROCESSED_DIR, TABLES_DIR
 from src.competition_analysis import hhi
+from src.config import CHARTS_DIR, PROCESSED_DIR, TABLES_DIR
 
 plt.rcParams["font.sans-serif"] = ["Microsoft YaHei", "SimHei", "Arial Unicode MS"]
 plt.rcParams["axes.unicode_minus"] = False

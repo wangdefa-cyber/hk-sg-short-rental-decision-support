@@ -36,11 +36,11 @@ def run() -> Path:
         if doc is not None:
             try:
                 doc.Close(False)
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
         try:
             app.Quit()
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
     return PDF
 

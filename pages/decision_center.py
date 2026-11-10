@@ -20,10 +20,15 @@ def render() -> None:
     room_type = st.selectbox("房型", room_types, key="decision_room")
     guests = st.slider("可容纳人数", 1, 16, 2, key="decision_guests")
     positioning = st.radio("经营定位", options["positioning"], horizontal=True, key="decision_position")
+    input_signature = (city_key, district, room_type, guests, positioning)
 
     if st.button("生成经营建议", type="primary", key="generate_decision"):
         result = recommend(city_key, district, room_type, guests, positioning)
         st.session_state["decision_result"] = result
+        st.session_state["decision_result_signature"] = input_signature
+
+    if st.session_state.get("decision_result_signature") != input_signature:
+        st.session_state.pop("decision_result", None)
 
     result = st.session_state.get("decision_result")
     if result is None:

@@ -2,13 +2,18 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-
 import pandas as pd
 import streamlit as st
 
 from src.config import PROJECT_ROOT
-from src.ui import city_data, page_header, price_model_summary, show_source, supply_demand_data, trends_status
+from src.ui import (
+    city_data,
+    page_header,
+    price_model_summary,
+    show_source,
+    supply_demand_data,
+    trends_status,
+)
 
 
 def _build_summary() -> str:
@@ -52,7 +57,7 @@ def _build_summary() -> str:
     lines += [
         "",
         "## Google Trends",
-        f"- 已导入文件数：{sum(item.get('status') == 'present' for item in trends_status())}/{len(trends_status())}。",
+        f"- 已导入并解析文件数：{sum(item.get('status') in {'present', 'parsed'} for item in trends_status())}/{len(trends_status())}。",
         "- 趋势数据按实际导入状态展示。",
         "",
         "## 研究限制",

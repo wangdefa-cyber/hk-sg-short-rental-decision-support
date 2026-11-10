@@ -191,7 +191,7 @@ def _review_correlations(monthly: pd.DataFrame) -> pd.DataFrame:
         }
         for mode, (trend_series, review_series) in modes.items():
             mode_frame = pd.DataFrame({"trend": trend_series, "review": review_series}).dropna().reset_index(drop=True)
-            for lag in range(0, 4):
+            for lag in range(4):
                 if len(mode_frame) - lag < 8:
                     continue
                 trend = mode_frame["trend"].iloc[: len(mode_frame) - lag].reset_index(drop=True) if lag else mode_frame["trend"]
@@ -323,9 +323,9 @@ def analyze() -> dict:
         "date_min": monthly["date"].min().date().isoformat(),
         "date_max": monthly["date"].max().date().isoformat(),
         "missing_values": int(monthly["interest_index"].isna().sum()),
-        "top_query_rows": int(len(top_queries)),
-        "review_correlation_rows": int(len(review_corr)),
-        "cross_city_correlation_rows": int(len(cross_city)),
+        "top_query_rows": len(top_queries),
+        "review_correlation_rows": len(review_corr),
+        "cross_city_correlation_rows": len(cross_city),
         "metrics": metrics.to_dict(orient="records"),
         "cross_city": cross_city.to_dict(orient="records"),
         "normalization_note": "Files are independently exported and normalized. Raw 0-100 levels are not directly comparable across files; z-scores are used for cross-series comparison.",

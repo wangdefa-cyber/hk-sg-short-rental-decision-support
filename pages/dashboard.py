@@ -5,7 +5,16 @@ from __future__ import annotations
 import plotly.express as px
 import streamlit as st
 
-from src.ui import CITY_NAMES, city_data, format_number, listing_data, metric_card, monthly_review_data, page_header, room_data, show_source
+from src.ui import (
+    CITY_NAMES,
+    city_data,
+    listing_data,
+    metric_card,
+    monthly_review_data,
+    page_header,
+    room_data,
+    show_source,
+)
 
 
 def render() -> None:

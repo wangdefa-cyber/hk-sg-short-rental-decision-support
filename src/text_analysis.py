@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
-import re
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -87,7 +87,7 @@ def run() -> dict:
     count_frames = []
     tfidf_frames = []
     summary = []
-    for city_key in CITY_NAMES:
+    for city_key in tuple(CITY_NAMES):
         city_reviews = reviews[reviews["city_key"] == city_key]
         words, tfidf, _ = _city_terms(city_reviews, city_key)
         count_frames.append(words)

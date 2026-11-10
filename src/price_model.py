@@ -6,6 +6,7 @@ import json
 
 import joblib
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -97,7 +98,7 @@ def _fit_city(df: pd.DataFrame, city_key: str) -> tuple[pd.DataFrame, pd.DataFra
     X = city[NUMERIC_FEATURES + CATEGORICAL_FEATURES]
     y = city[TARGET]
     y_log = np.log1p(y)
-    X_train, X_test, y_train_log, y_test_log, idx_train, idx_test = train_test_split(
+    X_train, X_test, y_train_log, y_test_log, _, idx_test = train_test_split(
         X, y_log, city.index, test_size=0.2, random_state=RANDOM_STATE
     )
 

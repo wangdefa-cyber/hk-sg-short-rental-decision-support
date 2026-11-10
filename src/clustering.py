@@ -6,18 +6,18 @@ import json
 
 import joblib
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from sklearn.cluster import KMeans
 from sklearn.compose import ColumnTransformer
-from sklearn.decomposition import PCA
 from sklearn.impute import SimpleImputer
 from sklearn.metrics import silhouette_score
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.cluster import KMeans
 
 from src.config import CHARTS_DIR, OUTPUT_DIR, PROCESSED_DIR, TABLES_DIR
 

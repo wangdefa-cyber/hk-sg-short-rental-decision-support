@@ -4,14 +4,18 @@ from __future__ import annotations
 
 import json
 import sqlite3
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import UTC, datetime
 
 import geopandas as gpd
 import pandas as pd
 
-from src.config import CITY_SPECS, PROCESSED_DIR, TABLES_DIR, OUTPUT_DIR
-from src.data_cleaner import clean_calendar, clean_listings, clean_neighbourhoods, clean_reviews
+from src.config import CITY_SPECS, OUTPUT_DIR, PROCESSED_DIR, TABLES_DIR
+from src.data_cleaner import (
+    clean_calendar,
+    clean_listings,
+    clean_neighbourhoods,
+    clean_reviews,
+)
 from src.data_loader import (
     discover_google_trends,
     load_calendar,
@@ -134,7 +138,7 @@ def _thresholds(listings: pd.DataFrame) -> list[dict]:
             {
                 "city_key": city_key,
                 "room_type": room_type,
-                "n": int(len(prices)),
+                "n": len(prices),
                 "p01": round(float(prices.quantile(0.01)), 4),
                 "p99": round(float(prices.quantile(0.99)), 4),
             }
@@ -208,9 +212,13 @@ def build_warehouse() -> dict:
     )
 
     google_trends = discover_google_trends()
-    fact_trends = pd.DataFrame(
-        columns=["city_key", "date", "keyword_group", "keyword", "interest_index", "source_file"]
-    )
+    trends_path = PROCESSED_DIR / "fact_google_trends.parquet"
+    if trends_path.exists():
+        fact_trends = pd.read_parquet(trends_path)
+    else:
+        fact_trends = pd.DataFrame(
+            columns=["city_key", "city_name", "keyword_group", "keyword", "year_month", "month", "source_file", "query_region", "export_scale", "interest_index", "observations", "date", "z_score", "relative_to_first", "mom_change_pct"]
+        )
 
     unmatched_calendar = int((~fact_calendar["listing_key"].isin(dim_listing["listing_key"])).sum())
     unmatched_reviews = int((~fact_review["listing_key"].isin(dim_listing["listing_key"])).sum())
@@ -261,7 +269,7 @@ def build_warehouse() -> dict:
         review_monthly.to_sql("review_monthly_summary", conn, if_exists="replace", index=False)
 
     quality = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "row_counts": {
             "dim_city": len(dim_city),
             "dim_listing": len(dim_listing),

@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import Any
 
-import numpy as np
 import pandas as pd
 
 from src.config import PROCESSED_DIR, TABLES_DIR
@@ -175,7 +174,7 @@ def recommend(
         "accommodates": int(accommodates),
         "positioning": positioning,
         "comparison_level": comparison_level,
-        "comparable_count": int(len(comparable)),
+        "comparable_count": len(comparable),
         "price_median_local": median_price,
         "price_q25_local": q25,
         "price_q75_local": q75,

@@ -2,11 +2,19 @@
 
 from __future__ import annotations
 
-import pandas as pd
 import plotly.express as px
 import streamlit as st
 
-from src.ui import CITY_NAMES, cluster_profiles, feature_importance, load_csv, load_parquet, page_header, price_model_summary, show_source
+from src.ui import (
+    CITY_NAMES,
+    cluster_profiles,
+    feature_importance,
+    load_csv,
+    load_parquet,
+    page_header,
+    price_model_summary,
+    show_source,
+)
 
 
 def render() -> None:
@@ -96,7 +104,7 @@ def render() -> None:
             )
             fig.update_layout(paper_bgcolor="rgba(0,0,0,0)", margin={"r": 0, "t": 45, "l": 0, "b": 0})
             st.plotly_chart(fig, width="stretch")
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             st.warning(f"地图组件暂不可用，改用经纬度散点图：{exc}")
             st.plotly_chart(px.scatter(points, x="longitude", y="latitude", color="spatial_cluster_label", template="plotly_dark"), width="stretch")
 

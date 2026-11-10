@@ -10,7 +10,6 @@ import streamlit as st
 from src.ui import (
     CITY_NAMES,
     metric_card,
-    monthly_review_data,
     page_header,
     show_source,
     trends_cross_city,

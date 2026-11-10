@@ -29,6 +29,11 @@ def render() -> None:
     if selected_rooms:
         filtered = filtered[filtered["room_type"].isin(selected_rooms)]
 
+    if filtered.empty:
+        st.warning("当前筛选条件没有房源，请调整社区、房型或价格区间。")
+        show_source("Inside Airbnb 房源快照；价格为本币。")
+        return
+
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         metric_card("筛选后房源", f"{len(filtered):,}", "当前筛选条件")
@@ -82,7 +87,7 @@ def render() -> None:
         st.plotly_chart(fig, width="stretch")
         if sampling_note:
             st.caption(sampling_note)
-    except Exception as exc:  # map style/network fallback
+    except Exception as exc:  # noqa: BLE001  # map style/network fallback
         st.warning(f"地图组件暂不可用，改用经纬度散点图。原因：{exc}")
         fig = px.scatter(map_data, x="longitude", y="latitude", color="room_type_cn", hover_name="neighbourhood", title="经纬度散点图", template="plotly_dark")
         st.plotly_chart(fig, width="stretch")

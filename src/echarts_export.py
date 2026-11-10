@@ -42,7 +42,7 @@ def _prepare_data() -> dict:
     rental_price["city_name"] = rental_price["city_key"].map(CITY_NAMES)
     boxes = []
     box_labels = []
-    for city_key in CITY_NAMES:
+    for city_key in tuple(CITY_NAMES):
         for room_type in ["整套房源", "独立房间", "合住房间", "酒店房间"]:
             values = rental_price[(rental_price["city_key"] == city_key) & (rental_price["room_type_cn"] == room_type)]["price_clean"]
             if len(values) >= 10:

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 from matplotlib.patches import FancyBboxPatch
@@ -24,7 +25,7 @@ def _box(ax, x, y, text, color, width=1.5, height=0.55):
 
 
 def _arrow(ax, x1, y1, x2, y2):
-    ax.annotate("", xy=(x2, y2), xytext=(x1, y1), arrowprops=dict(arrowstyle="->", color="#486581", lw=1.5))
+    ax.annotate("", xy=(x2, y2), xytext=(x1, y1), arrowprops={"arrowstyle": "->", "color": "#486581", "lw": 1.5})
 
 
 def flow() -> None:

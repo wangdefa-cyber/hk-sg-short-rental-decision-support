@@ -3,14 +3,13 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
 import pandas as pd
 import plotly.io as pio
 import streamlit as st
 
-from src.config import PROCESSED_DIR, PROJECT_ROOT, TABLES_DIR
+from src.config import PROJECT_ROOT, TABLES_DIR
 
 CITY_NAMES = {"hong-kong": "香港", "singapore": "新加坡"}
 _dark_template = pio.templates["plotly_dark"]
@@ -22,7 +21,6 @@ _dark_template.layout.yaxis.title.font.color = "#e7f0f7"
 _dark_template.layout.xaxis.tickfont.color = "#b9cfe0"
 _dark_template.layout.yaxis.tickfont.color = "#b9cfe0"
 pio.templates["plotly_dark"] = _dark_template
-CITY_COLORS = {"香港": "#59c3c3", "新加坡": "#f39c6b"}
 
 
 def inject_css() -> None:
@@ -206,11 +204,11 @@ def currency_for(city_key: str) -> str:
     return "HKD" if city_key == "hong-kong" else "SGD"
 
 
-def format_number(value: float | int | None, decimals: int = 0) -> str:
+def format_number(value: float | None, decimals: int = 0) -> str:
     if value is None or pd.isna(value):
         return "—"
     return f"{value:,.{decimals}f}"
 
 
 def show_source(text: str) -> None:
-    st.markdown(f'<div class="source-note">数据说明：{text}</div>', unsafe_allow_html=True)
+    st.markdown(f'<div class="source-note">来源：{text}</div>', unsafe_allow_html=True)

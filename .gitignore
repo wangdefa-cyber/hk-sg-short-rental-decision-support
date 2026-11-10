@@ -24,3 +24,6 @@ report/archive/
 
 # Superseded report files
 report/*_更新版.*
+
+# Static analysis cache
+.ruff_cache/

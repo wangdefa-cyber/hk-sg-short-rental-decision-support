@@ -1,10 +1,9 @@
-from pathlib import Path
 import json
 
 import pandas as pd
 import pytest
 
-from src.config import CITY_SPECS, GOOGLE_TRENDS_FILES, RAW_FILES, PROJECT_ROOT, snapshot_dir
+from src.config import CITY_SPECS, PROJECT_ROOT, RAW_FILES, snapshot_dir
 
 PROCESSED = PROJECT_ROOT / "data" / "processed"
 TABLES = PROJECT_ROOT / "outputs" / "tables"

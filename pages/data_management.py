@@ -42,8 +42,8 @@ def render() -> None:
     with right:
         st.markdown("### Google Trends 文件状态")
         trends = load_json("outputs/tables/google_trends_status.json")
-        present = sum(item.get("status") == "present" for item in trends)
-        st.metric("已提供文件", f"{present} / {len(trends)}")
+        available = sum(item.get("status") in {"present", "parsed"} for item in trends)
+        st.metric("已导入并解析", f"{available} / {len(trends)}")
         st.dataframe(pd.DataFrame(trends), width="stretch", hide_index=True)
         st.caption("需求趋势数据按实际导入文件展示，未提供的文件保持缺失状态。")
 

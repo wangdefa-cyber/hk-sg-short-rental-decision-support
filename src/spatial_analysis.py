@@ -5,11 +5,12 @@ from __future__ import annotations
 import json
 
 import matplotlib
+
 matplotlib.use("Agg")
+import geopandas as gpd
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import geopandas as gpd
 from sklearn.cluster import DBSCAN
 
 from src.config import CHARTS_DIR, PROCESSED_DIR, TABLES_DIR

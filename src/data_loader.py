@@ -7,7 +7,7 @@ from pathlib import Path
 import geopandas as gpd
 import pandas as pd
 
-from src.config import CITY_SPECS, GOOGLE_TRENDS_FILES, RAW_FILES, snapshot_dir
+from src.config import CITY_SPECS, GOOGLE_TRENDS_FILES, snapshot_dir
 
 
 def _required_file(city_key: str, filename: str) -> Path:

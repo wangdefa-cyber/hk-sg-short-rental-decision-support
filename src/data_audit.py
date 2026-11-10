@@ -12,7 +12,7 @@ import hashlib
 import json
 import re
 from collections import Counter
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from statistics import median
 from typing import Any
@@ -258,7 +258,7 @@ def write_manifest(audit: dict[str, Any]) -> None:
         trends_entries.append(entry)
     manifest = {
         "project": "城市短租平台供需匹配与经营决策支持系统",
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "inside_airbnb": entries,
         "google_trends": trends_entries,
         "notes": [
@@ -282,7 +282,7 @@ def render_markdown(audit: dict[str, Any]) -> str:
     ]
     for city in audit["cities"].values():
         files = city["files"]
-        def count(name: str) -> str:
+        def count(name: str, files=files) -> str:
             value = files.get(name, {})
             return f"{value.get('row_count', 0):,}" if value.get("status") == "present" else "缺失"
         features = files.get("neighbourhoods.geojson", {})
@@ -356,7 +356,7 @@ def render_markdown(audit: dict[str, Any]) -> str:
 def main() -> None:
     TABLES_DIR.mkdir(parents=True, exist_ok=True)
     audit = {
-        "generated_at": datetime.now(timezone.utc).isoformat(),
+        "generated_at": datetime.now(UTC).isoformat(),
         "cities": {city_key: audit_city(city_key) for city_key in CITY_SPECS},
     }
     trend_dir = PROJECT_ROOT / "data" / "external" / "google_trends"

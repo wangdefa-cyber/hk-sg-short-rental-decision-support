@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
@@ -61,7 +62,7 @@ def run() -> dict:
     city_rows = []
     district_rows = []
     lorenz_frames = []
-    for city_key in CITY_NAMES:
+    for city_key in tuple(CITY_NAMES):
         city_hosts = host_counts[host_counts["city_key"] == city_key]
         city_df = df[df["city_key"] == city_key]
         city_rows.append(

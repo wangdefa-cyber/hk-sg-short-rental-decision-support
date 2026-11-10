@@ -15,10 +15,10 @@ import json
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
-import numpy as np
 import pandas as pd
 from PIL import Image
 
@@ -159,7 +159,7 @@ def review_correlation_plot(corr: pd.DataFrame) -> tuple[Path, Path]:
                 for _, point in part.iterrows():
                     ax.annotate(f"{point['pearson_r']:.2f}", (point["lag_months"], point["pearson_r"]), xytext=(0, 7), textcoords="offset points", ha="center", fontsize=7)
             ax.set_title(f"{CITY_NAMES[city]} · {GROUP_NAMES[group]}")
-            ax.set_xticks(range(0, 4))
+            ax.set_xticks(range(4))
             ax.set_ylim(-0.45, 0.5)
             if row == 1:
                 ax.set_xlabel("评论滞后（月）")
